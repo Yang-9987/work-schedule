@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 import { get, put } from "@vercel/blob";
 
 const CONFIG_PATH = "schedule/config.json";
+const ALLOWED_TYPES = new Set([
+  "work", "rest", "key", "student_entry", "lesson", "recess", "eye_exercise",
+  "lunch", "hygiene", "broadcast", "nap", "club",
+]);
 const FALLBACK_CONFIG = {
   company: "联调测试公司",
   schedule: [
@@ -27,7 +31,8 @@ function safeEqual(a, b) {
 function validConfig(config) {
   return config && typeof config === "object" && !Array.isArray(config)
     && Array.isArray(config.schedule) && Array.isArray(config.workdays)
-    && config.workdays.length === 7 && Array.isArray(config.tips);
+    && config.workdays.length === 7 && Array.isArray(config.tips)
+    && config.schedule.every((item) => item && typeof item === "object" && ALLOWED_TYPES.has(item.type));
 }
 
 export async function GET() {

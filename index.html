@@ -106,6 +106,15 @@
   .tag-work { background: var(--primary-light); color: var(--primary); }
   .tag-rest { background: var(--success-light); color: var(--success); }
   .tag-key { background: var(--warning-light); color: var(--warning); }
+  .tag-student-entry { background: #ccfbf1; color: #0f766e; }
+  .tag-lesson { background: #dbeafe; color: #1d4ed8; }
+  .tag-recess { background: #dcfce7; color: #15803d; }
+  .tag-eye-exercise { background: #f3e8ff; color: #7e22ce; }
+  .tag-lunch { background: #ffedd5; color: #c2410c; }
+  .tag-hygiene { background: #fee2e2; color: #b91c1c; }
+  .tag-broadcast { background: #e0e7ff; color: #4338ca; }
+  .tag-nap { background: #cffafe; color: #0e7490; }
+  .tag-club { background: #fce7f3; color: #be185d; }
   .tag-now { background: var(--primary); color: #fff; }
   .tl-item.now .tl-name::after { content: " · 进行中"; font-size: 11px; color: var(--primary); font-weight: 500; }
 
@@ -295,7 +304,7 @@
     <div id="sRows"></div>
     <button class="btn-add" onclick="addRow()">+ 添加时段</button>
     <div class="hint">
-      时间格式 HH:MM（如 09:00）；「结束时间」留空表示单点事件（打卡等）。类型：工作 / 休息 / 关键节点。
+      时间格式 HH:MM（如 09:00）；「结束时间」留空表示单点事件。类型可选工作、休息、关键节点及各类校园活动。
     </div>
   </div>
 
@@ -315,7 +324,7 @@
       <button class="btn-ghost" onclick="downloadTemplateXLSX()">下载模板 (Excel)</button>
     </div>
     <div class="hint">
-      模板列：<b>名称, 开始时间, 结束时间, 类型, 说明</b>。类型填：工作 / 休息 / 关键节点（或英文 work / rest / key）。<br>
+      模板列：<b>名称, 开始时间, 结束时间, 类型, 说明</b>。类型支持：学生入校、上课、大课间活动、眼保健操时间、午餐时间、卫生检查、校园广播、午休时间、社团等。<br>
       Excel 中可另加「设置」Sheet：公司名称 / 周一~周日(1或0) / 温馨提示，导入后自动填充。
     </div>
   </div>
@@ -376,6 +385,20 @@ var DEFAULT_CONFIG = {
   ]
 };
 var WEEK_NAMES = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+var TYPE_META = {
+  work:          { label: "工作",         className: "tag-work" },
+  rest:          { label: "休息",         className: "tag-rest" },
+  key:           { label: "关键节点",     className: "tag-key" },
+  student_entry: { label: "学生入校",     className: "tag-student-entry" },
+  lesson:        { label: "上课",         className: "tag-lesson" },
+  recess:        { label: "大课间活动",   className: "tag-recess" },
+  eye_exercise:  { label: "眼保健操时间", className: "tag-eye-exercise" },
+  lunch:         { label: "午餐时间",     className: "tag-lunch" },
+  hygiene:       { label: "卫生检查",     className: "tag-hygiene" },
+  broadcast:     { label: "校园广播",     className: "tag-broadcast" },
+  nap:           { label: "午休时间",     className: "tag-nap" },
+  club:          { label: "社团",         className: "tag-club" }
+};
 var cfg = null;          // 当前生效配置
 var isAdmin = false;
 var sessionAdminPass = ""; // 仅存内存，关闭页面即清除
@@ -402,7 +425,7 @@ function normalizeConfig(j){
       name: String(it.name || "未命名"),
       start: start,
       end: it.end ? normalizeTime(it.end) : "",
-      type: ["work","rest","key"].indexOf(it.type) >= 0 ? it.type : "work",
+      type: TYPE_META[it.type] ? it.type : "work",
       desc: String(it.desc || "")
     });
   });
@@ -521,8 +544,9 @@ function renderTimeline(now){
     var timeHtml = it.end
       ? '<span class="range">' + it.start + " - " + it.end + '</span>'
       : '<span class="single">' + it.start + '</span>';
-    var tagClass = it.type === "rest" ? "tag-rest" : (it.type === "key" ? "tag-key" : "tag-work");
-    var tagText = it.type === "rest" ? "休息" : (it.type === "key" ? "节点" : "工作");
+    var typeMeta = TYPE_META[it.type] || TYPE_META.work;
+    var tagClass = typeMeta.className;
+    var tagText = typeMeta.label;
     el.innerHTML =
       '<div class="tl-time">' + timeHtml + '</div>' +
       '<div class="tl-dot"></div>' +
@@ -677,14 +701,13 @@ function addRow(it){
   var box = document.getElementById("sRows");
   var row = document.createElement("div");
   row.className = "srow";
+  var typeOptions = Object.keys(TYPE_META).map(function(type){
+    return '<option value="' + type + '"' + (it.type === type ? " selected" : "") + '>' + TYPE_META[type].label + '</option>';
+  }).join("");
   row.innerHTML =
     '<div class="srow-line1">' +
       '<input class="s-name" placeholder="名称，如：上午工作" value="' + esc(it.name) + '">' +
-      '<select class="s-type">' +
-        '<option value="work"' + (it.type === "work" ? " selected" : "") + '>工作</option>' +
-        '<option value="rest"' + (it.type === "rest" ? " selected" : "") + '>休息</option>' +
-        '<option value="key"' + (it.type === "key" ? " selected" : "") + '>关键节点</option>' +
-      '</select>' +
+      '<select class="s-type">' + typeOptions + '</select>' +
     '</div>' +
     '<div class="srow-line2">' +
       '<input class="s-start" placeholder="开始 09:00" value="' + esc(it.start) + '">' +
@@ -841,7 +864,16 @@ var AL = { name: ["名称", "时段", "name", "项目"], start: ["开始", "star
            type: ["类型", "type"], desc: ["说明", "desc", "备注"] };
 function mapType(t){
   t = String(t || "").trim();
-  if (/休息|午休|break|rest/i.test(t)) return "rest";
+  if (/学生入校|入校|到校|student[_ -]?entry|arrival/i.test(t)) return "student_entry";
+  if (/大课间|recess|big[_ -]?break/i.test(t)) return "recess";
+  if (/眼保健操|眼操|eye[_ -]?exercise/i.test(t)) return "eye_exercise";
+  if (/午餐|午饭|lunch/i.test(t)) return "lunch";
+  if (/卫生检查|卫生|hygiene|inspection/i.test(t)) return "hygiene";
+  if (/校园广播|广播|broadcast/i.test(t)) return "broadcast";
+  if (/午休|nap/i.test(t)) return "nap";
+  if (/社团|club/i.test(t)) return "club";
+  if (/上课|课程|lesson|class/i.test(t)) return "lesson";
+  if (/休息|break|rest/i.test(t)) return "rest";
   if (/节点|关键|打卡|会议|key|meeting/i.test(t)) return "key";
   return "work";
 }
@@ -940,12 +972,15 @@ function parseWorkbook(wb){
 function templateRows(){
   return [
     ["名称", "开始时间", "结束时间", "类型", "说明"],
-    ["上班打卡", "08:30", "", "关键节点", "迟到 08:31 起算"],
-    ["晨会", "09:00", "09:30", "关键节点", "部门晨会 / 站会"],
-    ["上午工作", "09:30", "12:00", "工作", "专注工作时间"],
-    ["午休", "12:00", "13:30", "休息", "午餐 + 午休"],
-    ["下午工作", "13:30", "18:00", "工作", "专注工作时间"],
-    ["下班打卡", "18:00", "", "关键节点", "早退 17:59 前算"]
+    ["学生入校", "07:30", "07:50", "学生入校", "校门口值岗"],
+    ["第一节课", "08:00", "08:40", "上课", ""],
+    ["大课间", "09:30", "10:00", "大课间活动", "操场活动"],
+    ["眼保健操", "10:40", "10:45", "眼保健操时间", ""],
+    ["午餐", "11:40", "12:20", "午餐时间", ""],
+    ["午休", "12:20", "13:20", "午休时间", ""],
+    ["校园广播", "13:20", "13:30", "校园广播", ""],
+    ["卫生检查", "15:20", "", "卫生检查", ""],
+    ["社团活动", "15:30", "16:30", "社团", ""]
   ];
 }
 function csvEsc(v){
