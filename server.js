@@ -9,7 +9,7 @@
  *   POST /api/config     保存发布作息（body: { adminPass, config }，全员即时生效）
  *
  * 配置存储：data/config.json（自动创建）
- * 默认管理密码：8888（可用环境变量 ADMIN_PASS 覆盖，或直接编辑 data/config.json 的 adminPass 字段）
+ * 管理密码：必须通过环境变量 ADMIN_PASS 设置，不写入代码或配置文件。
  *
  * 运行：node server.js   （建议用 pm2 保活：pm2 start server.js --name schedule）
  * 端口：环境变量 PORT，默认 3000
@@ -23,7 +23,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const CONFIG_FILE = path.join(DATA_DIR, "config.json");
-const DEFAULT_PASS = process.env.ADMIN_PASS || "8888";
+const ADMIN_PASS = process.env.ADMIN_PASS || "";
 const MAX_BODY = 1024 * 1024; // 请求体上限 1MB
 
 const MIME = {
@@ -92,7 +92,24 @@ const server = http.createServer((req, res) => {
 
   // ===================== API =====================
   if (p === "/api/health") {
-    return send(res, 200, { ok: true, t: Date.now() });
+    return send(res, ADMIN_PASS ? 200 : 503, { ok: Boolean(ADMIN_PASS), t: Date.now() });
+  }
+
+  if (p === "/api/auth" && req.method === "POST") {
+    if (!ADMIN_PASS) return send(res, 503, { ok: false, error: "server not configured" });
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 4096) req.destroy();
+    });
+    req.on("end", () => {
+      let data;
+      try { data = JSON.parse(body); } catch (e) { return send(res, 400, { ok: false, error: "invalid json" }); }
+      return safeEqual(data.adminPass, ADMIN_PASS)
+        ? send(res, 200, { ok: true })
+        : send(res, 401, { ok: false, error: "密码错误" });
+    });
+    return;
   }
 
   if (p === "/api/config") {
@@ -112,16 +129,15 @@ const server = http.createServer((req, res) => {
       req.on("end", () => {
         let data;
         try { data = JSON.parse(body); } catch (e) { return send(res, 400, { ok: false, error: "invalid json" }); }
-        const stored = loadStored();
-        const currentPass = stored && stored.adminPass ? stored.adminPass : DEFAULT_PASS;
-        if (!safeEqual(data.adminPass, currentPass)) {
+        if (!ADMIN_PASS) return send(res, 503, { ok: false, error: "server not configured" });
+        if (!safeEqual(data.adminPass, ADMIN_PASS)) {
           return send(res, 401, { ok: false, error: "密码错误" });
         }
         const cfg = data.config;
         if (!cfg || typeof cfg !== "object") {
           return send(res, 400, { ok: false, error: "config 缺失" });
         }
-        cfg.adminPass = currentPass; // 保留服务器侧密码，不随前端更新
+        delete cfg.adminPass;
         saveStored(cfg);
         console.log("[" + new Date().toLocaleString() + "] 配置已发布更新");
         return send(res, 200, { ok: true });
@@ -155,5 +171,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log("作息时间表后端已启动: http://0.0.0.0:" + PORT);
   console.log("配置存储: " + CONFIG_FILE);
-  console.log("管理密码: " + (process.env.ADMIN_PASS ? "(来自环境变量 ADMIN_PASS)" : "8888（默认，请尽快修改）"));
+  console.log("管理密码: " + (ADMIN_PASS ? "(来自环境变量 ADMIN_PASS)" : "未配置（管理功能不可用）"));
 });

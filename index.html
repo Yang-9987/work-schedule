@@ -211,6 +211,11 @@
   }
   .import-row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
   .btn-ghost { border: 1px solid var(--line); background: #fff; color: var(--text-2); border-radius: 9px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  .import-status { display: none; margin-top: 10px; border-radius: 9px; padding: 9px 11px; font-size: 12px; line-height: 1.5; }
+  .import-status.show { display: block; }
+  .import-status.loading { color: #175cd3; background: #eff8ff; border: 1px solid #b2ddff; }
+  .import-status.success { color: #067647; background: #ecfdf3; border: 1px solid #abefc6; }
+  .import-status.error { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; }
   .hint { font-size: 11.5px; color: var(--text-3); margin-top: 6px; line-height: 1.6; }
   .json-out { width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 9px; padding: 10px; font-size: 11px; font-family: Consolas, Menlo, monospace; color: var(--text-2); background: #fafbfd; }
 
@@ -364,12 +369,13 @@
 
   <div class="acard">
     <h4>导入作息文件（自动生成）</h4>
-    <input id="fFile" type="file" accept=".csv,.xlsx,.xls" style="display:none">
+    <input id="fFile" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
     <div class="import-row">
       <button class="btn-ghost" onclick="document.getElementById('fFile').click()">选择 CSV / Excel 文件</button>
       <button class="btn-ghost" onclick="downloadTemplateCSV()">下载模板 (CSV)</button>
       <button class="btn-ghost" onclick="downloadTemplateXLSX()">下载模板 (Excel)</button>
     </div>
+    <div id="importStatus" class="import-status" role="status" aria-live="polite"></div>
     <div class="hint">
       模板列：<b>名称, 开始时间, 结束时间, 类型, 说明</b>。类型支持：学生入校、上课、大课间活动、眼保健操时间、午餐时间、卫生检查、校园广播、午休时间、社团等。<br>
       Excel 中可另加「设置」Sheet：公司名称 / 周一~周日(1或0) / 温馨提示，导入后自动填充。
@@ -414,7 +420,6 @@
  * ===================================================== */
 var DEFAULT_CONFIG = {
   company: "XX科技有限公司",
-  adminPass: "8888",              // 管理后台密码（不会随 config.json 导出）
   schedule: [
     { name: "上班打卡",   start: "08:30", end: "",      type: "key",  desc: "迟到 08:31 起算" },
     { name: "晨会",       start: "09:00", end: "09:30", type: "key",  desc: "部门晨会 / 站会" },
@@ -646,7 +651,7 @@ function renderViewer(){
 
 /* ============ 管理后台 ============ */
 function adminPass(){
-  return sessionAdminPass || cfg.adminPass || DEFAULT_CONFIG.adminPass;
+  return sessionAdminPass;
 }
 function tryAdmin(){
   if (isAdmin) { openAdmin(); return; }
@@ -698,10 +703,8 @@ function submitAdminLogin(event){
     setAdminLoginBusy(false);
     finishAdminLogin(p);
   }).catch(function(){
-    // 纯静态部署保留本机编辑能力
     setAdminLoginBusy(false);
-    if (p !== adminPass()) { toast("密码错误"); input.select(); return; }
-    finishAdminLogin(p);
+    toast("管理员验证服务暂时不可用");
   });
 }
 function openAdmin(){
@@ -884,31 +887,67 @@ document.getElementById("fFile").addEventListener("change", function(){
   var f = this.files[0];
   this.value = "";
   if (!f) return;
+  if (f.size > 10 * 1024 * 1024) {
+    setImportStatus("文件超过 10MB，请精简后重试", "error");
+    return;
+  }
   var n = f.name.toLowerCase();
+  setImportStatus("正在读取「" + f.name + "」…", "loading");
   if (n.endsWith(".csv")) {
     var reader = new FileReader();
-    reader.onload = function(e){ parseCsvText(e.target.result); };
-    reader.readAsText(f, "utf-8");
+    reader.onload = function(e){
+      try { parseCsvText(decodeCsvBuffer(e.target.result)); }
+      catch (err) { importFailed("CSV 解析失败：" + err.message); }
+    };
+    reader.onerror = function(){ importFailed("CSV 文件读取失败，请重新选择文件"); };
+    reader.readAsArrayBuffer(f);
   } else if (n.endsWith(".xlsx") || n.endsWith(".xls")) {
     loadSheetJS(function(){
       var reader = new FileReader();
       reader.onload = function(e){
         try {
-          var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+          var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array", cellDates: false });
           parseWorkbook(wb);
-        } catch (err) { toast("Excel 解析失败：" + err.message); }
+        } catch (err) { importFailed("Excel 解析失败：" + err.message); }
       };
+      reader.onerror = function(){ importFailed("Excel 文件读取失败，请重新选择文件"); };
       reader.readAsArrayBuffer(f);
     });
-  } else toast("仅支持 CSV / XLSX 文件");
+  } else importFailed("仅支持 CSV、XLSX 或 XLS 文件");
 });
 
+function setImportStatus(msg, kind){
+  var el = document.getElementById("importStatus");
+  el.textContent = msg;
+  el.className = "import-status show " + (kind || "loading");
+}
+function importFailed(msg){
+  setImportStatus(msg, "error");
+  toast(msg);
+}
 function loadSheetJS(cb){
   if (window.XLSX) return cb();
+  if (loadSheetJS.loading) { loadSheetJS.queue.push(cb); return; }
+  loadSheetJS.loading = true;
+  loadSheetJS.queue = [cb];
   var s = document.createElement("script");
-  s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
-  s.onload = cb;
-  s.onerror = function(){ toast("Excel 解析库加载失败，请检查网络，或改用 CSV"); };
+  var timer = setTimeout(failed, 12000);
+  function done(){
+    clearTimeout(timer);
+    loadSheetJS.loading = false;
+    var queue = loadSheetJS.queue.splice(0);
+    queue.forEach(function(fn){ fn(); });
+  }
+  function failed(){
+    clearTimeout(timer);
+    s.onerror = null;
+    loadSheetJS.loading = false;
+    loadSheetJS.queue = [];
+    importFailed("Excel 解析组件加载失败，请刷新页面后重试");
+  }
+  s.src = "/vendor/xlsx.full.min.js?v=0.18.5";
+  s.onload = function(){ window.XLSX ? done() : failed(); };
+  s.onerror = failed;
   document.head.appendChild(s);
 }
 
@@ -939,13 +978,31 @@ function mapType(t){
   return "work";
 }
 
+function normalizeImportedTime(value){
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return pad(value.getHours()) + ":" + pad(value.getMinutes());
+  }
+  if (typeof value === "number" && isFinite(value)) {
+    var fraction = ((value % 1) + 1) % 1;
+    var minutes = Math.round(fraction * 24 * 60) % (24 * 60);
+    return pad(Math.floor(minutes / 60)) + ":" + pad(minutes % 60);
+  }
+  var text = String(value == null ? "" : value).trim();
+  var normal = normalizeTime(text);
+  if (normal) return normal;
+  var cn = text.match(/^(\d{1,2})\s*[时点]\s*(\d{1,2})?\s*分?$/);
+  if (cn) return normalizeTime(cn[1] + ":" + pad(+(cn[2] || 0)));
+  if (/^\d*\.\d+$/.test(text)) return normalizeImportedTime(Number(text));
+  return "";
+}
+
 function parseRows(rows){
   // 找出表头行
   var hi = -1;
   for (var i = 0; i < rows.length && i < 20; i++){
-    if (findCol(rows[i], AL.name) >= 0 && (findCol(rows[i], AL.start) >= 0 || findCol(rows[i], AL.end) >= 0)) { hi = i; break; }
+    if (findCol(rows[i], AL.name) >= 0 && findCol(rows[i], AL.start) >= 0) { hi = i; break; }
   }
-  if (hi < 0) { toast("未识别到表头（需包含：名称、开始时间）"); return; }
+  if (hi < 0) { importFailed("未识别到表头（需包含：名称、开始时间）"); return; }
   var cName = findCol(rows[hi], AL.name), cStart = findCol(rows[hi], AL.start),
       cEnd = findCol(rows[hi], AL.end), cType = findCol(rows[hi], AL.type), cDesc = findCol(rows[hi], AL.desc);
   var list = [], skipped = 0;
@@ -953,17 +1010,19 @@ function parseRows(rows){
     var row = rows[r];
     if (!row || !row.length) continue;
     var name = String(row[cName] == null ? "" : row[cName]).trim();
-    var start = normalizeTime(String(row[cStart] == null ? "" : row[cStart]));
+    var start = normalizeImportedTime(row[cStart]);
     if (!name && !start) continue;
     if (!start) { skipped++; continue; }
-    var end = cEnd >= 0 ? normalizeTime(String(row[cEnd] == null ? "" : row[cEnd])) : "";
+    var end = cEnd >= 0 && row[cEnd] !== "" ? normalizeImportedTime(row[cEnd]) : "";
     var type = cType >= 0 ? mapType(row[cType]) : "work";
     var desc = cDesc >= 0 ? String(row[cDesc] == null ? "" : row[cDesc]).trim() : "";
     list.push({ name: name, start: start, end: end, type: type, desc: desc });
   }
-  if (!list.length) { toast("未解析到有效时段"); return; }
+  if (!list.length) { importFailed("未解析到有效时段，请检查名称和开始时间列"); return; }
   applyImported(list);
-  toast("已生成 " + list.length + " 个时段" + (skipped ? "（跳过 " + skipped + " 行时间格式错误）" : ""));
+  var result = "已导入 " + list.length + " 个时段" + (skipped ? "，跳过 " + skipped + " 行时间格式错误" : "") + "。确认后请点击“保存并发布”";
+  setImportStatus(result, "success");
+  toast("导入成功：" + list.length + " 个时段");
 }
 
 function applyImported(list){
@@ -989,8 +1048,33 @@ function applySettings(kv){
   renderWdGrid();
 }
 
+function decodeCsvBuffer(buffer){
+  var bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes.subarray(2));
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes.subarray(2));
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\ufeff/, ""); }
+  catch (e) {
+    try { return new TextDecoder("gb18030").decode(bytes); }
+    catch (e2) { return new TextDecoder("utf-8").decode(bytes).replace(/^\ufeff/, ""); }
+  }
+}
+function detectDelimiter(text){
+  var candidates = [",", "\t", ";", "，"], scores = [0, 0, 0, 0];
+  var lines = text.split(/\r?\n/).filter(function(line){ return line.trim(); }).slice(0, 10);
+  lines.forEach(function(line){
+    var inQ = false;
+    for (var i = 0; i < line.length; i++){
+      if (line[i] === '"') inQ = !inQ;
+      if (!inQ) candidates.forEach(function(d, idx){ if (line[i] === d) scores[idx]++; });
+    }
+  });
+  var best = 0;
+  for (var j = 1; j < scores.length; j++) if (scores[j] > scores[best]) best = j;
+  return scores[best] ? candidates[best] : ",";
+}
 function parseCsvText(text){
-  // 简单 CSV 解析（支持引号）
+  // 支持 UTF-8/GB18030、引号字段及逗号/制表符/分号分隔。
+  var delimiter = detectDelimiter(text);
   var rows = [], cur = "", row = [], inQ = false;
   for (var i = 0; i < text.length; i++){
     var c = text[i];
@@ -998,7 +1082,7 @@ function parseCsvText(text){
       if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
       else cur += c;
     } else if (c === '"') inQ = true;
-    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === delimiter) { row.push(cur); cur = ""; }
     else if (c === "\n" || c === "\r") {
       if (c === "\r" && text[i + 1] === "\n") i++;
       row.push(cur); cur = "";
@@ -1014,7 +1098,7 @@ function parseWorkbook(wb){
   var found = false;
   Object.keys(wb.Sheets).forEach(function(sname){
     var ws = wb.Sheets[sname];
-    var rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
     if (sname.indexOf("设置") >= 0 || sname.indexOf("settings") >= 0) {
       var kv = rows.filter(function(r){ return r && r.length >= 2 && String(r[0]).trim() !== ""; })
                    .map(function(r){ return { k: r[0], v: r[1] }; });
