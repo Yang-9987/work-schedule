@@ -187,6 +187,34 @@
   }
   .admin-tip { background: var(--primary-light); color: #3b5fae; font-size: 12px; border-radius: 10px; padding: 10px 12px; line-height: 1.6; margin: 0 2px 12px; }
 
+  /* ===== 内置密码弹窗（兼容企业微信 WebView） ===== */
+  .login-mask {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    align-items: center; justify-content: center; padding: 22px;
+    background: rgba(15, 23, 42, .52); backdrop-filter: blur(3px);
+  }
+  .login-mask.show { display: flex; }
+  .login-dialog {
+    width: 100%; max-width: 360px; padding: 22px 20px 18px;
+    border-radius: 18px; background: #fff;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, .22);
+  }
+  .login-dialog h3 { font-size: 18px; margin-bottom: 6px; }
+  .login-dialog p { color: var(--text-2); font-size: 13px; margin-bottom: 16px; }
+  .login-dialog input {
+    width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 11px;
+    padding: 0 13px; color: var(--text); background: #fff; font-size: 16px;
+    outline: none; -webkit-appearance: none;
+  }
+  .login-dialog input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,108,255,.12); }
+  .login-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .login-actions button {
+    flex: 1; border-radius: 11px; padding: 11px 0; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .login-cancel { border: 1px solid var(--line); color: var(--text-2); background: #fff; }
+  .login-submit { border: none; color: #fff; background: var(--primary); }
+  .login-submit:disabled { opacity: .6; }
+
   #toast {
     position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-80px);
     background: rgba(26,34,51,.92); color: #fff; font-size: 13px;
@@ -308,6 +336,18 @@
       <button class="btn-ghost2" onclick="resetConfig()">恢复默认</button>
     </div>
   </div>
+</div>
+
+<div class="login-mask" id="loginMask" aria-hidden="true">
+  <form class="login-dialog" onsubmit="submitAdminLogin(event)">
+    <h3>管理员验证</h3>
+    <p>请输入管理密码后进入作息编辑页。</p>
+    <input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
+    <div class="login-actions">
+      <button class="login-cancel" type="button" onclick="closeAdminLogin()">取消</button>
+      <button class="login-submit" id="adminLoginSubmit" type="submit">确认进入</button>
+    </div>
+  </form>
 </div>
 
 <div id="toast"></div>
@@ -539,27 +579,58 @@ function adminPass(){
 }
 function tryAdmin(){
   if (isAdmin) { openAdmin(); return; }
-  var p = prompt("请输入管理密码：");
-  if (p === null) return;
+  var mask = document.getElementById("loginMask");
+  var input = document.getElementById("adminPasswordInput");
+  input.value = "";
+  mask.classList.add("show");
+  mask.setAttribute("aria-hidden", "false");
+  setTimeout(function(){ input.focus(); }, 50);
+}
+function closeAdminLogin(){
+  var mask = document.getElementById("loginMask");
+  mask.classList.remove("show");
+  mask.setAttribute("aria-hidden", "true");
+  document.getElementById("adminPasswordInput").blur();
+}
+function finishAdminLogin(p){
+  sessionAdminPass = p;
+  isAdmin = true;
+  closeAdminLogin();
+  openAdmin();
+}
+function setAdminLoginBusy(busy){
+  var button = document.getElementById("adminLoginSubmit");
+  button.disabled = busy;
+  button.textContent = busy ? "验证中…" : "确认进入";
+}
+function submitAdminLogin(event){
+  event.preventDefault();
+  var input = document.getElementById("adminPasswordInput");
+  var p = input.value;
+  if (!p) { toast("请输入管理密码"); input.focus(); return; }
+  setAdminLoginBusy(true);
   fetch("/api/auth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ adminPass: p })
   }).then(function(r){
-    if (r.status === 401) { toast("密码错误"); return false; }
+    if (r.status === 401) {
+      setAdminLoginBusy(false);
+      toast("密码错误");
+      input.select();
+      return false;
+    }
     if (!r.ok) throw new Error("backend unavailable");
     return true;
   }).then(function(ok){
     if (!ok) return;
-    sessionAdminPass = p;
-    isAdmin = true;
-    openAdmin();
+    setAdminLoginBusy(false);
+    finishAdminLogin(p);
   }).catch(function(){
     // 纯静态部署保留本机编辑能力
-    if (p !== adminPass()) { toast("密码错误"); return; }
-    sessionAdminPass = p;
-    isAdmin = true;
-    openAdmin();
+    setAdminLoginBusy(false);
+    if (p !== adminPass()) { toast("密码错误"); input.select(); return; }
+    finishAdminLogin(p);
   });
 }
 function openAdmin(){
