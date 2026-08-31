@@ -1,0 +1,24 @@
+{
+  "company": "联调测试公司",
+  "schedule": [
+    {
+      "name": "上午工作",
+      "start": "09:00",
+      "end": "12:00",
+      "type": "work",
+      "desc": "专注"
+    }
+  ],
+  "workdays": [
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+  ],
+  "tips": [
+    "测试"
+  ]
+}
