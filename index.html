@@ -133,7 +133,7 @@
   .footer { text-align: center; color: var(--text-3); font-size: 11px; margin-top: 22px; }
 
   /* ===== 管理后台 ===== */
-  #admin { display: none; padding: 0 14px 155px; }
+  #admin { display: none; padding: 0 14px calc(184px + env(safe-area-inset-bottom)); }
   .admin-head {
     display: flex; align-items: center; justify-content: space-between;
     margin: 18px 2px 14px;
@@ -150,7 +150,7 @@
   .field label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 5px; }
   .field input, .field textarea, .field select {
     width: 100%; border: 1px solid var(--line); border-radius: 9px;
-    padding: 9px 11px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text);
+    padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff; color: var(--text);
   }
   .field textarea { resize: vertical; min-height: 64px; }
   .wd-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -158,15 +158,53 @@
   .wd-cell .wd-n { font-weight: 700; font-size: 15px; }
   .wd-cell.on { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
 
-  .srow { border: 1px solid var(--line); border-radius: 11px; padding: 10px; margin-bottom: 9px; background: #fafbfd; }
-  .srow-line1 { display: flex; gap: 8px; margin-bottom: 8px; }
-  .srow-line1 input.s-name { flex: 2; }
-  .srow-line1 select.s-type { flex: 1; }
-  .srow-line2 { display: flex; gap: 8px; margin-bottom: 8px; }
-  .srow-line2 input { flex: 1; }
-  .srow-line3 { display: flex; gap: 8px; align-items: flex-start; }
-  .srow-line3 input { flex: 1; }
-  .srow .del { border: none; background: none; color: var(--danger); font-size: 15px; padding: 8px 6px; cursor: pointer; flex-shrink: 0; }
+  .srow {
+    --row-accent: var(--primary);
+    position: relative; overflow: hidden;
+    border: 1px solid #e5eaf2; border-radius: 14px;
+    padding: 13px 13px 13px 17px; margin-bottom: 11px;
+    background: linear-gradient(145deg, #fff 0%, #f9fbff 100%);
+    box-shadow: 0 3px 12px rgba(26,34,51,.045);
+  }
+  .srow::before {
+    content: ""; position: absolute; left: 0; top: 13px; bottom: 13px;
+    width: 4px; border-radius: 0 4px 4px 0; background: var(--row-accent);
+  }
+  .srow-type-student-entry { --row-accent: #0f766e; }
+  .srow-type-lesson { --row-accent: #1d4ed8; }
+  .srow-type-recess { --row-accent: #15803d; }
+  .srow-type-eye-exercise { --row-accent: #7e22ce; }
+  .srow-type-lunch { --row-accent: #c2410c; }
+  .srow-type-hygiene { --row-accent: #b91c1c; }
+  .srow-type-broadcast { --row-accent: #4338ca; }
+  .srow-type-nap { --row-accent: #0e7490; }
+  .srow-type-club { --row-accent: #be185d; }
+  .srow-line1, .srow-line2, .srow-line3 { display: grid; gap: 10px; min-width: 0; }
+  .srow-line1 { grid-template-columns: minmax(0, 1.15fr) minmax(132px, .85fr); margin-bottom: 10px; }
+  .srow-line2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 10px; }
+  .srow-line3 { grid-template-columns: minmax(0, 1fr) 42px; align-items: end; }
+  .sfield { display: block; min-width: 0; }
+  .sfield-label {
+    display: block; margin: 0 0 5px 2px;
+    color: var(--text-3); font-size: 11px; font-weight: 600; line-height: 1;
+  }
+  .srow input, .srow select {
+    display: block; width: 100%; min-width: 0; height: 42px;
+    border: 1px solid #d9e0ea; border-radius: 10px;
+    padding: 0 11px; background: #fff; color: var(--text);
+    font-family: inherit; font-size: 15px; font-weight: 500; line-height: 1.2; outline: none;
+  }
+  .srow input { -webkit-appearance: none; }
+  .srow select { padding-right: 8px; color: #344054; }
+  .srow input::placeholder { color: #b0b8c6; font-weight: 400; }
+  .srow input:focus, .srow select:focus {
+    border-color: var(--row-accent); box-shadow: 0 0 0 3px rgba(43,108,255,.12);
+  }
+  .srow .del {
+    width: 42px; height: 42px; border: 1px solid #fee2e2; border-radius: 10px;
+    background: #fff7f7; color: var(--danger); font-size: 18px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
   .btn-add {
     width: 100%; border: 1.5px dashed var(--primary); background: var(--primary-light);
     color: var(--primary); border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -178,13 +216,16 @@
 
   .admin-bar {
     position: fixed; left: 0; right: 0; bottom: 0; max-width: 540px; margin: 0 auto;
-    background: #fff; border-top: 1px solid var(--line); padding: 10px 14px 12px;
+    background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 8px; z-index: 9;
+    box-shadow: 0 -10px 28px rgba(26,34,51,.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
   .abar-row { display: flex; gap: 10px; }
+  .abar-secondary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .btn-ghost2 {
     flex: 1; border: 1px solid var(--line); border-radius: 11px; background: #fff; color: var(--text-3);
-    font-size: 13px; font-weight: 600; padding: 12px 0; cursor: pointer;
+    font-size: 13px; font-weight: 600; padding: 12px 4px; cursor: pointer;
   }
   .btn-primary {
     flex: 1; border: none; border-radius: 11px; background: var(--primary); color: #fff;
@@ -192,7 +233,13 @@
   }
   .btn-secondary {
     flex: 1; border: 1px solid var(--line); border-radius: 11px; background: #fff; color: var(--text);
-    font-size: 15px; font-weight: 600; padding: 12px 0; cursor: pointer;
+    min-width: 0; font-size: 13px; font-weight: 600; padding: 12px 4px; cursor: pointer; white-space: nowrap;
+  }
+  @media (max-width: 360px) {
+    .srow-line1 { grid-template-columns: minmax(0, 1fr); }
+    .srow-line3 { grid-template-columns: minmax(0, 1fr) 42px; }
+    .abar-secondary { gap: 6px; }
+    .btn-secondary, .btn-ghost2 { font-size: 12px; }
   }
   .admin-tip { background: var(--primary-light); color: #3b5fae; font-size: 12px; border-radius: 10px; padding: 10px 12px; line-height: 1.6; margin: 0 2px 12px; }
 
@@ -289,8 +336,8 @@
   <div class="acard">
     <h4>基本信息</h4>
     <div class="field">
-      <label>公司名称（显示在页面上方）</label>
-      <input id="fCompany" type="text" placeholder="如：XX科技有限公司">
+      <label>单位名称（显示在页面上方）</label>
+      <input id="fCompany" type="text" placeholder="如：XX学校">
     </div>
   </div>
 
@@ -336,12 +383,12 @@
   </div>
 
   <div class="admin-bar">
-    <div class="abar-row">
+    <div class="abar-row abar-publish">
       <button class="btn-primary" onclick="publishConfig()">保存并发布（全员生效）</button>
     </div>
-    <div class="abar-row">
+    <div class="abar-row abar-secondary">
       <button class="btn-secondary" onclick="saveLocal()">仅本机保存</button>
-      <button class="btn-secondary" onclick="exportJson()">导出 config.json</button>
+      <button class="btn-secondary" onclick="exportJson()">导出配置</button>
       <button class="btn-ghost2" onclick="resetConfig()">恢复默认</button>
     </div>
   </div>
@@ -706,21 +753,35 @@ function addRow(it){
   }).join("");
   row.innerHTML =
     '<div class="srow-line1">' +
-      '<input class="s-name" placeholder="名称，如：上午工作" value="' + esc(it.name) + '">' +
-      '<select class="s-type">' + typeOptions + '</select>' +
+      '<label class="sfield"><span class="sfield-label">时段名称</span>' +
+        '<input class="s-name" placeholder="如：第一节课" value="' + esc(it.name) + '"></label>' +
+      '<label class="sfield"><span class="sfield-label">节点类型</span>' +
+        '<select class="s-type">' + typeOptions + '</select></label>' +
     '</div>' +
     '<div class="srow-line2">' +
-      '<input class="s-start" placeholder="开始 09:00" value="' + esc(it.start) + '">' +
-      '<input class="s-end" placeholder="结束 12:00（可留空）" value="' + esc(it.end) + '">' +
+      '<label class="sfield"><span class="sfield-label">开始时间</span>' +
+        '<input class="s-start" inputmode="numeric" placeholder="09:00" value="' + esc(it.start) + '"></label>' +
+      '<label class="sfield"><span class="sfield-label">结束时间</span>' +
+        '<input class="s-end" inputmode="numeric" placeholder="可留空" value="' + esc(it.end) + '"></label>' +
     '</div>' +
     '<div class="srow-line3">' +
-      '<input class="s-desc" placeholder="说明（选填）" value="' + esc(it.desc) + '">' +
-      '<button class="del" onclick="delRow(this)">✕</button>' +
+      '<label class="sfield"><span class="sfield-label">说明</span>' +
+        '<input class="s-desc" placeholder="选填" value="' + esc(it.desc) + '"></label>' +
+      '<button class="del" type="button" onclick="delRow(this)" aria-label="删除该时段">✕</button>' +
     '</div>';
   box.appendChild(row);
-  row.querySelectorAll("input, select").forEach(function(inp){
+  row.querySelectorAll("input").forEach(function(inp){
     inp.oninput = refreshJson;
   });
+  row.querySelector(".s-type").onchange = function(){
+    applyRowTypeStyle(row);
+    refreshJson();
+  };
+  applyRowTypeStyle(row);
+}
+function applyRowTypeStyle(row){
+  var type = row.querySelector(".s-type").value.replace(/_/g, "-");
+  row.className = "srow srow-type-" + type;
 }
 function delRow(btn){ btn.closest(".srow").remove(); refreshJson(); }
 function esc(s){ return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
