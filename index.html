@@ -338,6 +338,7 @@ var DEFAULT_CONFIG = {
 var WEEK_NAMES = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 var cfg = null;          // 当前生效配置
 var isAdmin = false;
+var sessionAdminPass = ""; // 仅存内存，关闭页面即清除
 
 /* ============ 配置加载链：URL?config= → ./config.json → 本机保存 → 默认 ============ */
 function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
@@ -534,15 +535,32 @@ function renderViewer(){
 
 /* ============ 管理后台 ============ */
 function adminPass(){
-  return cfg.adminPass || DEFAULT_CONFIG.adminPass;
+  return sessionAdminPass || cfg.adminPass || DEFAULT_CONFIG.adminPass;
 }
 function tryAdmin(){
   if (isAdmin) { openAdmin(); return; }
   var p = prompt("请输入管理密码：");
   if (p === null) return;
-  if (p !== adminPass()) { toast("密码错误"); return; }
-  isAdmin = true;
-  openAdmin();
+  fetch("/api/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ adminPass: p })
+  }).then(function(r){
+    if (r.status === 401) { toast("密码错误"); return false; }
+    if (!r.ok) throw new Error("backend unavailable");
+    return true;
+  }).then(function(ok){
+    if (!ok) return;
+    sessionAdminPass = p;
+    isAdmin = true;
+    openAdmin();
+  }).catch(function(){
+    // 纯静态部署保留本机编辑能力
+    if (p !== adminPass()) { toast("密码错误"); return; }
+    sessionAdminPass = p;
+    isAdmin = true;
+    openAdmin();
+  });
 }
 function openAdmin(){
   document.getElementById("viewer").style.display = "none";

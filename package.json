@@ -2,12 +2,15 @@
   "name": "schedule-server",
   "version": "1.0.0",
   "private": true,
-  "description": "作息时间表极简后端（零依赖，Node 16+）",
-  "main": "server.js",
+  "description": "作息时间表（Vercel Functions + Vercel Blob）",
   "scripts": {
-    "start": "node server.js"
+    "start:local": "node server.js",
+    "check": "node --check server.js && node --check api/health.mjs && node --check api/auth.mjs && node --check api/config.mjs"
   },
   "engines": {
-    "node": ">=16"
+    "node": "22.x"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.3.0"
   }
 }
