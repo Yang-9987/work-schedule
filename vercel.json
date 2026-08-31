@@ -1,6 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
+  "cleanUrls": false,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/work-schedule/",
+      "permanent": true
+    },
+    {
+      "source": "/work-schedule",
+      "destination": "/work-schedule/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/work-schedule/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/work-schedule/config.json",
+      "destination": "/config.json"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
