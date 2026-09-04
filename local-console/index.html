@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f5f">
+  <title>本地工作台 · 校园工作台</title>
+  <link rel="stylesheet" href="/assets/css/local-console.css?v=3">
+</head>
+<body>
+  <section class="local-login" id="loginScreen">
+    <form class="local-login-card" id="loginForm">
+      <a href="/">校园工作台</a>
+      <h1 id="loginTitle">登录本地工作台</h1>
+      <p id="loginDescription">输入本地密码后继续。</p>
+      <label>本地密码<input id="localPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label>
+      <label id="confirmPasswordField" hidden>确认密码<input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128"></label>
+      <p class="login-error" id="loginError" role="alert"></p>
+      <button class="button primary" id="loginButton" type="submit">登录</button>
+      <small>密码仅用于当前电脑，不会上传到 Vercel 或企业微信。</small>
+    </form>
+  </section>
+
+  <div id="consoleApp" hidden>
+  <header class="console-header">
+    <div>
+      <a href="/">校园工作台</a>
+      <span>本地工作台</span>
+    </div>
+    <div class="header-actions"><div class="wecom-status" id="wecomStatus"><i></i><span>检查企业微信连接</span></div><button id="logoutButton" type="button">退出</button></div>
+  </header>
+
+  <main class="console-main">
+    <section class="page-title">
+      <div><h1>本地工作台</h1><p>读取企业微信智能表格，检查字段并生成网页数据映射。</p></div>
+      <button class="button secondary" id="refreshStatus" type="button">重新检查连接</button>
+    </section>
+
+    <section class="status-bar" aria-label="本地状态">
+      <div><span>运行位置</span><strong>仅本机 127.0.0.1</strong></div>
+      <div><span>企业微信 CLI</span><strong id="cliVersion">检查中</strong></div>
+      <div><span>授权状态</span><strong id="authState">检查中</strong></div>
+      <div><span>映射配置</span><strong id="mappingUpdate">尚未读取</strong></div>
+    </section>
+
+    <section class="console-grid">
+      <aside class="module-panel panel">
+        <div class="panel-head"><h2>网页模块</h2><span id="moduleTotal">0 个</span></div>
+        <nav id="moduleList" aria-label="网页模块"></nav>
+      </aside>
+
+      <section class="work-panel panel">
+        <div class="panel-head"><div><h2 id="moduleName">选择模块</h2><p id="moduleRoute">—</p></div><span class="schema" id="schemaName">—</span></div>
+
+        <div class="step-block">
+          <div class="step-title"><span>1</span><div><h3>选择企业微信表格</h3><p>粘贴智能表格链接后读取子表。</p></div></div>
+          <div class="inline-form">
+            <label class="grow">智能表格链接<input id="documentUrl" type="url" placeholder="https://doc.weixin.qq.com/smartsheet/..."></label>
+            <button class="button primary" id="discoverButton" type="button">读取子表</button>
+          </div>
+          <p class="document-info" id="documentInfo">尚未读取表格</p>
+        </div>
+
+        <div class="step-block">
+          <div class="step-title"><span>2</span><div><h3>选择子表并读取字段</h3><p>只读取字段结构，不修改企业微信内容。</p></div></div>
+          <div class="inline-form compact">
+            <label class="grow">子表<select id="sheetSelect"><option value="">请先读取表格</option></select></label>
+            <button class="button primary" id="fieldsButton" type="button">读取字段</button>
+          </div>
+          <div class="field-summary" id="fieldSummary">尚未读取字段</div>
+        </div>
+
+        <div class="step-block mapping-block">
+          <div class="step-title"><span>3</span><div><h3>检查字段映射</h3><p>左侧是企业微信列，右侧是网页使用的标准字段。</p></div></div>
+          <div class="mapping-list" id="mappingList"><p class="empty">读取字段后可配置映射。</p></div>
+        </div>
+
+        <div class="action-bar">
+          <span id="saveHint">修改仅保存在本机。</span>
+          <button class="button secondary" id="previewButton" type="button">预览 8 行</button>
+          <button class="button secondary" id="previewPageButton" type="button">预览网页</button>
+          <button class="button secondary" id="fullReadButton" type="button">完整读取并预览</button>
+          <button class="button secondary" id="resumeReadButton" type="button" hidden>继续读取</button>
+          <button class="button secondary" id="cancelReadButton" type="button" hidden>取消读取</button>
+          <button class="button primary" id="saveButton" type="button">保存字段映射</button>
+          <button class="button secondary" id="releaseButton" type="button">发布与版本</button>
+        </div>
+        <p id="fullReadProgress" role="status" aria-live="polite"></p>
+      </section>
+
+      <aside class="preview-panel panel">
+        <div class="panel-head"><h2>数据预览</h2><span id="previewCount">0 行</span></div>
+        <div class="preview-wrap" id="previewTable"><p class="empty">完成字段映射后，读取少量样例数据进行检查。</p></div>
+        <div class="notice"><strong>本地处理</strong><p>企业微信授权和读取操作都在当前电脑完成。页面不会显示或上传企业微信内部标识。</p></div>
+      </aside>
+    </section>
+  </main>
+  </div>
+
+  <section class="page-preview" id="pagePreview" hidden aria-label="网页预览">
+    <div class="page-preview__bar">
+      <div><strong id="pagePreviewTitle">网页预览</strong><span id="pagePreviewMeta">本地临时数据</span></div>
+      <button id="closePagePreview" type="button">关闭预览</button>
+    </div>
+    <iframe id="pagePreviewFrame" title="网页预览内容"></iframe>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="releaseDialog" class="release-dialog">
+    <h2>数据发布与版本</h2>
+    <p id="releaseModule"></p>
+    <label>目标环境<select id="releaseEnvironment"><option value="dev">dev · 测试环境</option><option value="main">main · 正式环境</option></select></label>
+    <p id="releaseTarget"></p>
+    <label>目标网站管理员账号<input id="releaseUser" autocomplete="username" value="admin"></label>
+    <label>目标网站管理员密码<input id="releasePassword" type="password" autocomplete="current-password"></label>
+    <button id="releaseLogin" type="button">验证管理员并读取版本</button>
+    <p>发布仅接受“完整读取并预览”校验通过的数据。请先检查网页；这里只发布数据，不提交代码、不合并分支。</p>
+    <button id="releasePublish" type="button" disabled>发布已检查的预览</button>
+    <h3>可回退的历史版本</h3><div id="releaseVersions"></div>
+    <button id="releaseMore" type="button" hidden>加载更多版本</button>
+    <p id="releaseStatus" role="status"></p>
+    <button id="releaseClose" type="button">关闭</button>
+  </dialog>
+  <script src="/assets/js/local-console.js?v=9" defer></script>
+  <script src="/assets/js/local-releases.js?v=1" defer></script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "updatedAt": null,
+  "modules": [
+    {
+      "id": "school-calendar",
+      "name": "校历",
+      "route": "/school-calendar/",
+      "status": "active",
+      "mappingState": "draft",
+      "revision": 1,
+      "schema": {
+        "id": "calendar.v2",
+        "fields": [
+          {
+            "key": "date",
+            "label": "日期",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "title",
+            "label": "事件",
+            "type": "text",
+            "required": true
+          }
+        ]
+      },
+      "source": {
+        "type": "wecom-smartsheet",
+        "name": "校历智能表格",
+        "documentUrl": "",
+        "sheet": "智能表1",
+        "fields": [
+          {
+            "name": "日期",
+            "type": "date"
+          },
+          {
+            "name": "事件",
+            "type": "text"
+          }
+        ]
+      },
+      "mappings": [
+        {
+          "source": "日期",
+          "target": "date",
+          "transform": "date",
+          "required": true
+        },
+        {
+          "source": "事件",
+          "target": "title",
+          "transform": "trim",
+          "required": true
+        }
+      ],
+      "view": {
+        "type": "calendar",
+        "titleField": "title",
+        "dateField": "date",
+        "visibleFields": [
+          "date",
+          "title"
+        ],
+        "sort": "date:asc"
+      }
+    },
+    {
+      "id": "work-schedule",
+      "name": "作息时间表",
+      "route": "/work-schedule/",
+      "status": "active",
+      "mappingState": "draft",
+      "revision": 1,
+      "schema": {
+        "id": "schedule.v1",
+        "fields": [
+          {
+            "key": "name",
+            "label": "时段名称",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "start",
+            "label": "开始时间",
+            "type": "time",
+            "required": true
+          },
+          {
+            "key": "end",
+            "label": "结束时间",
+            "type": "time",
+            "required": false
+          },
+          {
+            "key": "type",
+            "label": "时段类型",
+            "type": "enum",
+            "required": true
+          },
+          {
+            "key": "desc",
+            "label": "说明",
+            "type": "text",
+            "required": false
+          }
+        ]
+      },
+      "source": {
+        "type": "wecom-smartsheet",
+        "name": "作息智能表格",
+        "documentUrl": "",
+        "sheet": "作息表",
+        "fields": [
+          {
+            "name": "名称",
+            "type": "text"
+          },
+          {
+            "name": "开始时间",
+            "type": "text"
+          },
+          {
+            "name": "结束时间",
+            "type": "text"
+          },
+          {
+            "name": "类型",
+            "type": "text"
+          },
+          {
+            "name": "说明",
+            "type": "text"
+          }
+        ]
+      },
+      "mappings": [
+        {
+          "source": "名称",
+          "target": "name",
+          "transform": "trim",
+          "required": true
+        },
+        {
+          "source": "开始时间",
+          "target": "start",
+          "transform": "time",
+          "required": true
+        },
+        {
+          "source": "结束时间",
+          "target": "end",
+          "transform": "time",
+          "required": false
+        },
+        {
+          "source": "类型",
+          "target": "type",
+          "transform": "type-map",
+          "required": true
+        },
+        {
+          "source": "说明",
+          "target": "desc",
+          "transform": "trim",
+          "required": false
+        }
+      ],
+      "view": {
+        "type": "timeline",
+        "titleField": "name",
+        "dateField": "start",
+        "visibleFields": [
+          "start",
+          "end",
+          "name",
+          "type",
+          "desc"
+        ],
+        "sort": "start:asc"
+      }
+    },
+    {
+      "id": "duty-roster",
+      "name": "值班排班",
+      "route": "/duty-roster/",
+      "status": "planned",
+      "mappingState": "draft",
+      "revision": 1,
+      "schema": {
+        "id": "duty-roster.v2",
+        "fields": [
+          {
+            "key": "date",
+            "label": "日期",
+            "type": "date",
+            "required": true
+          },
+          {
+            "key": "person",
+            "label": "值班领导（或合并人员列）",
+            "type": "text",
+            "required": false
+          },
+          {
+            "key": "cadre",
+            "label": "值班干部",
+            "type": "text",
+            "required": false
+          },
+          {
+            "key": "type",
+            "label": "安排类型（正常／放假／补课）",
+            "type": "enum",
+            "required": false
+          },
+          {
+            "key": "shift",
+            "label": "班次（可选）",
+            "type": "text",
+            "required": false
+          },
+          {
+            "key": "location",
+            "label": "值班地点",
+            "type": "text",
+            "required": false
+          },
+          {
+            "key": "note",
+            "label": "备注",
+            "type": "text",
+            "required": false
+          }
+        ]
+      },
+      "source": {
+        "type": "wecom-smartsheet",
+        "name": "值班排班智能表格",
+        "documentUrl": "",
+        "sheet": "值班排班",
+        "fields": [
+          {
+            "name": "日期",
+            "type": "date"
+          },
+          {
+            "name": "值班领导",
+            "type": "text"
+          },
+          {
+            "name": "值班干部",
+            "type": "text"
+          },
+          {
+            "name": "类型",
+            "type": "text"
+          },
+          {
+            "name": "地点",
+            "type": "text"
+          },
+          {
+            "name": "备注",
+            "type": "text"
+          }
+        ]
+      },
+      "mappings": [
+        {
+          "source": "日期",
+          "target": "date",
+          "transform": "date",
+          "required": true
+        },
+        {
+          "source": "值班领导",
+          "target": "person",
+          "transform": "trim",
+          "required": false
+        },
+        {
+          "source": "值班干部",
+          "target": "cadre",
+          "transform": "trim",
+          "required": false
+        },
+        {
+          "source": "类型",
+          "target": "type",
+          "transform": "type-map",
+          "required": false
+        },
+        {
+          "source": "地点",
+          "target": "location",
+          "transform": "trim",
+          "required": false
+        },
+        {
+          "source": "备注",
+          "target": "note",
+          "transform": "trim",
+          "required": false
+        }
+      ],
+      "view": {
+        "type": "table",
+        "titleField": "person",
+        "dateField": "date",
+        "visibleFields": [
+          "date",
+          "type",
+          "person",
+          "cadre",
+          "note"
+        ],
+        "sort": "date:asc"
+      }
+    }
+  ]
+}

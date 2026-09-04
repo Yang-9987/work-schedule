@@ -1,6 +1,12 @@
 node_modules/
 .DS_Store
 data/config.json
+data/module-mappings.json
+data/local-console-auth.json
 data/*.tmp
+data/*.json
+data/releases/
+release-artifacts/
 .vercel/
 .env*
+config/wecom-calendar.local.json

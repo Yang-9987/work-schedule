@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f5f">
+  <title>数据映射中心 · 校园工作台</title>
+  <link rel="stylesheet" href="/assets/css/mapping-admin.css">
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm">
+      <a class="login-brand" href="/">首师附一小 · 校园工作台</a>
+      <h1>数据映射中心</h1>
+      <p class="login-copy">登录后配置企业微信表格与网页的对应关系。</p>
+      <label>管理员账号<input id="adminUser" value="admin" autocomplete="username" required></label>
+      <label>管理员密码<input id="adminPass" type="password" autocomplete="current-password" required></label>
+      <p class="form-error" id="loginError" role="alert"></p>
+      <button class="primary-button" type="submit">进入映射中心</button>
+    </form>
+  </div>
+
+  <div class="admin-shell" id="adminShell" hidden>
+    <header class="topbar">
+      <a class="brand" href="/"><span class="brand-mark">首</span><span>校园工作台</span></a>
+      <div class="topbar-title"><span>管理后台</span><strong>数据映射中心</strong></div>
+      <div class="topbar-actions">
+        <span class="connection" id="connectionState"><i></i>等待数据</span>
+        <button class="text-button" id="logoutButton" type="button">退出</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="workspace-heading">
+        <div>
+          <h1>数据映射中心</h1>
+          <p>配置企业微信智能表格、标准字段和网页展示。</p>
+        </div>
+        <div class="heading-actions">
+          <button class="secondary-button" id="validateButton" type="button">检查配置</button>
+          <button class="secondary-button" id="saveButton" type="button">保存草稿</button>
+          <button class="primary-button" id="publishButton" type="button">发布映射</button>
+        </div>
+      </section>
+
+      <section class="summary-strip" aria-label="映射概览">
+        <div><span>网页模块</span><strong id="moduleCount">—</strong></div>
+        <div><span>已发布映射</span><strong id="publishedCount">—</strong></div>
+        <div><span>待完善字段</span><strong id="issueCount">—</strong></div>
+        <div class="summary-time"><span>最后更新</span><strong id="updatedAt">尚未保存</strong></div>
+      </section>
+
+      <div class="mapping-workbench">
+        <aside class="module-rail">
+          <div class="panel-label"><span>01</span><div><strong>选择网页</strong><small>页面模块</small></div></div>
+          <nav id="moduleList" aria-label="网页模块"></nav>
+          <div class="rail-note">
+            <strong>说明</strong>
+            <p>企业微信列名改变时，在字段映射中更新即可。</p>
+          </div>
+        </aside>
+
+        <section class="mapping-stage">
+          <div class="stage-head">
+            <div class="panel-label"><span>02</span><div><strong>连接与转换</strong><small>企业微信智能表格</small></div></div>
+            <span class="state-chip" id="mappingState">草稿</span>
+          </div>
+
+          <div class="source-card">
+            <div class="source-card-head">
+              <div><span class="source-icon">企</span><div><strong id="sourceName">企业微信智能表格</strong><small>本地工作台负责授权和读取</small></div></div>
+              <span class="safe-badge">凭据不上传</span>
+            </div>
+            <div class="source-form">
+              <label>智能表格链接<input id="documentUrl" type="url" placeholder="https://doc.weixin.qq.com/smartsheet/..."></label>
+              <label>子表名称<input id="sheetName" placeholder="例如：校历"></label>
+            </div>
+          </div>
+
+          <div class="mapping-table-wrap">
+            <div class="table-heading">
+              <div><strong>字段映射</strong><span id="schemaName">—</span></div>
+              <button class="text-button" id="resetModuleButton" type="button">恢复本次修改</button>
+            </div>
+            <div class="mapping-table" id="mappingTable"></div>
+          </div>
+        </section>
+
+        <aside class="preview-panel">
+          <div class="panel-label"><span>03</span><div><strong>检查网页</strong><small>展示规则与预览</small></div></div>
+
+          <div class="page-target">
+            <span>对应网页</span>
+            <a id="pageRoute" href="/" target="_blank" rel="noreferrer">—</a>
+          </div>
+
+          <label class="select-field">展示方式
+            <select id="viewType">
+              <option value="calendar">月历</option>
+              <option value="timeline">时间轴</option>
+              <option value="table">表格</option>
+              <option value="cards">卡片</option>
+            </select>
+          </label>
+
+          <fieldset class="visible-fields">
+            <legend>网页显示字段</legend>
+            <div id="visibleFields"></div>
+          </fieldset>
+
+          <div class="preview-card">
+            <div class="preview-toolbar"><span></span><span></span><span></span><small>网页预览结构</small></div>
+            <div id="previewContent"></div>
+          </div>
+
+          <div class="check-card" id="checkCard">
+            <strong>等待检查</strong>
+            <p>检查必填字段、重复映射和数据源设置。</p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/assets/js/mapping-admin.js" defer></script>
+</body>
+</html>

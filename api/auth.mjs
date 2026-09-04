@@ -1,11 +1,4 @@
-import crypto from "node:crypto";
-
-function safeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string") return false;
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && crypto.timingSafeEqual(left, right);
-}
+import { adminUser, createAdminToken, safeEqual } from "./_lib/admin-auth.mjs";
 export async function POST(request) {
   let body;
   try {
@@ -18,8 +11,12 @@ export async function POST(request) {
   if (!configuredPass) {
     return Response.json({ ok: false, error: "server not configured" }, { status: 503 });
   }
-  if (!safeEqual(body.adminPass, configuredPass)) {
-    return Response.json({ ok: false, error: "密码错误" }, { status: 401 });
+  const username = body.adminUser || adminUser();
+  if (!safeEqual(username, adminUser()) || !safeEqual(body.adminPass, configuredPass)) {
+    return Response.json({ ok: false, error: "管理员账号或密码错误" }, { status: 401 });
   }
-  return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json(
+    { ok: true, token: createAdminToken(username), adminUser: username },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

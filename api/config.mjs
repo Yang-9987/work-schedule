@@ -1,19 +1,11 @@
 import crypto from "node:crypto";
-import { get, put } from "@vercel/blob";
+import { hasBlobConfig } from './_lib/blob-config.mjs';
+import { versionedStore } from './_lib/versioned-store.mjs';
 
-const CONFIG_PATH = "schedule/config.json";
 const ALLOWED_TYPES = new Set([
   "work", "rest", "key", "student_entry", "lesson", "recess", "eye_exercise",
   "lunch", "hygiene", "broadcast", "nap", "club",
 ]);
-const FALLBACK_CONFIG = {
-  company: "联调测试公司",
-  schedule: [
-    { name: "上午工作", start: "09:00", end: "12:00", type: "work", desc: "专注" },
-  ],
-  workdays: [false, true, true, true, true, true, false],
-  tips: ["测试"],
-};
 
 function json(data, status = 200) {
   return Response.json(data, {
@@ -28,7 +20,7 @@ function safeEqual(a, b) {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-function validConfig(config) {
+export function validConfig(config) {
   return config && typeof config === "object" && !Array.isArray(config)
     && Array.isArray(config.schedule) && Array.isArray(config.workdays)
     && config.workdays.length === 7 && Array.isArray(config.tips)
@@ -36,22 +28,16 @@ function validConfig(config) {
 }
 
 export async function GET() {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return json(FALLBACK_CONFIG);
   try {
-    const result = await get(CONFIG_PATH, { access: "private" });
-    if (!result || result.statusCode !== 200 || !result.stream) return json(FALLBACK_CONFIG);
-    const stored = await new Response(result.stream).json();
-    return json(stored);
-  } catch (error) {
-    if (error?.name === "BlobNotFoundError") return json(FALLBACK_CONFIG);
-    console.error("Failed to read schedule config", error);
-    return json({ ok: false, error: "storage unavailable" }, 503);
-  }
+    const data = await versionedStore.read('work-schedule');
+    return data ? json(data) : json({ error: '作息时间尚未发布' }, 404);
+  } catch { return json({ error: 'storage unavailable' }, 503); }
+
 }
 
 export async function POST(request) {
   const configuredPass = process.env.ADMIN_PASS;
-  if (!configuredPass || !process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!configuredPass || !hasBlobConfig()) {
     return json({ ok: false, error: "server not configured" }, 503);
   }
 
@@ -70,13 +56,8 @@ export async function POST(request) {
 
   const config = JSON.parse(JSON.stringify(body.config));
   delete config.adminPass;
-  await put(CONFIG_PATH, JSON.stringify(config, null, 2), {
-    access: "private",
-    allowOverwrite: true,
-    contentType: "application/json; charset=utf-8",
-    cacheControlMaxAge: 60,
-  });
-  return json({ ok: true });
+  try { return json({ ok: true, ...await versionedStore.write('work-schedule', config) }); }
+  catch { return json({ error: '写入未启用、版本冲突或存储不可用' }, 503); }
 }
 
 export function OPTIONS() {

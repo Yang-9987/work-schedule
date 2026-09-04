@@ -1,0 +1,28 @@
+{
+  "source": {
+    "url": "https://doc.weixin.qq.com/smartsheet/请替换为智能表格链接",
+    "sheet": "智能表1",
+    "fields": {
+      "title": "事件",
+      "date": "日期",
+      "importance": "重要程度",
+      "type": "",
+      "note": ""
+    }
+  },
+  "calendar": {
+    "schoolName": "首师附一小",
+    "academicYear": "2026—2027",
+    "defaultType": "activity",
+    "typeMap": {
+      "教学安排": "teaching",
+      "校园活动": "activity",
+      "节假日": "holiday",
+      "考试": "exam"
+    },
+    "includeImportanceInNote": true
+  },
+  "destination": {
+    "url": "https://ssfyx.site/api/calendar-sync"
+  }
+}

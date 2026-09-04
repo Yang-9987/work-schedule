@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const client=require('../shared/release-client.cjs');
+const moduleData={id:'school-calendar',revision:1};
+const preview={mappingFingerprint:client.fingerprint(moduleData),sourceRowCount:2,complete:true,verifiedPasses:2,owner:'session-a',issues:[],rowCount:2,data:{events:[]}};
+assert.deepEqual(client.publishData(preview,moduleData),preview.data);
+assert.deepEqual(client.publishData({...preview,sourceRowCount:450},moduleData),preview.data);
+assert.throws(()=>client.publishData({...preview,complete:false},moduleData));
+assert.throws(()=>client.publishData({...preview,verifiedPasses:1},moduleData));
+assert.throws(()=>client.publishData(preview,moduleData,'session-b'));
+assert.throws(()=>client.publishData({...preview,issues:['错误']},moduleData));
+assert.throws(()=>client.publishData(preview,{...moduleData,revision:2}));
+assert.throws(()=>client.target('dev',{}));
+assert.throws(()=>client.target('dev',{RELEASE_DEV_URL:'http://localhost/'}));
+assert.equal(client.target('dev',{RELEASE_DEV_URL:'https://example.com/'}),'https://example.com');
+console.log('Release target and preview safeguards passed.');

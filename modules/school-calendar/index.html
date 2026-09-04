@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f5f">
+  <title>校历 · 校园工作台</title>
+  <link rel="stylesheet" href="/assets/css/app-shell.css">
+  <link rel="stylesheet" href="/assets/css/calendar.css?v=2">
+</head>
+<body class="calendar-page">
+  <nav class="module-nav" aria-label="网站导航">
+    <a class="module-nav__brand" href="/">校园工作台</a>
+    <div class="module-nav__links">
+      <a href="/work-schedule/">作息时间表</a>
+      <a href="/school-calendar/" aria-current="page">校历</a>
+      <a href="/duty-roster/">值班排班</a>
+    </div>
+  </nav>
+
+  <main class="calendar-access" id="calendarAccess">
+    <section class="access-card" aria-labelledby="accessTitle">
+      <p class="eyebrow">校历建设</p>
+      <div class="access-seal" aria-hidden="true">校历</div>
+      <h1 id="accessTitle">校历管理</h1>
+      <p class="access-copy">查看校历无需登录；编辑和发布需要管理员登录。</p>
+      <div class="development-note"><span aria-hidden="true"></span><p><strong>当前进度</strong> 管理员可提前录入和校对校历内容。</p></div>
+      <button class="admin-entry" id="showAdminLogin" type="button">管理员登录</button>
+      <div class="login-panel" id="loginPanel" hidden>
+        <div class="login-panel__head"><h2>管理员验证</h2><button id="hideAdminLogin" type="button" aria-label="关闭管理员登录">×</button></div>
+        <form id="adminLogin" class="access-form">
+          <label>管理员账号<input id="adminUser" name="adminUser" type="text" value="admin" autocomplete="username" required></label>
+          <label>管理员密码<input id="adminPass" name="adminPass" type="password" autocomplete="current-password" required></label>
+          <button class="access-submit" id="loginSubmit" type="submit">登录并进入编辑</button>
+          <p class="access-status" id="loginStatus" role="status"></p>
+        </form>
+      </div>
+      <a class="access-back" href="/school-calendar/">← 返回校历</a>
+    </section>
+  </main>
+
+  <main class="calendar-shell" id="calendarApp" hidden>
+    <header class="calendar-header">
+      <div>
+        <p class="eyebrow" id="calendarYear">2026—2027 学年</p>
+        <h1>校历</h1>
+        <p id="calendarMode">管理员模式 · 查看并维护学期节点、节假日与校园活动。</p>
+      </div>
+      <div class="calendar-header__actions">
+        <button class="outline-button" id="editToggle" type="button">进入编辑模式</button>
+        <button class="text-button" id="adminLogout" type="button">退出管理员</button>
+      </div>
+      <a class="calendar-admin-link" href="/admin/calendar/">管理后台</a>
+    </header>
+
+    <section class="calendar-toolbar" aria-label="月份选择">
+      <button id="prevMonth" type="button" aria-label="上个月">←</button>
+      <h2 id="monthTitle">加载中…</h2>
+      <button id="nextMonth" type="button" aria-label="下个月">→</button>
+      <button id="todayButton" class="today-button" type="button">回到今天</button>
+    </section>
+
+    <div class="calendar-layout">
+      <section class="calendar-card" aria-label="月历">
+        <div class="weekday-row" aria-hidden="true">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <div class="month-grid" id="monthGrid"></div>
+      </section>
+
+      <aside class="event-panel" id="eventPanel">
+        <div class="event-panel__heading">
+          <div>
+            <p class="eyebrow">本月安排</p>
+            <h2 id="eventListTitle">本月事件</h2>
+          </div>
+          <span id="eventCount">0 项</span>
+        </div>
+        <button id="showAllEvents" class="all-events-button" type="button" hidden>查看本月全部</button>
+        <div id="eventList" class="event-list" aria-live="polite"></div>
+
+        <form id="eventEditor" class="event-editor" hidden>
+          <h3>添加校历事项</h3>
+          <label>日期<input id="eventDate" type="date" required></label>
+          <label>事件<textarea id="eventTitle" maxlength="5000" placeholder="每行一条事件，可带编号；均显示在所选日期" required></textarea></label>
+          <button class="primary-button" type="submit">添加事项</button>
+          <button class="save-button" id="saveCalendar" type="button">保存并发布</button>
+          <p class="editor-status" id="editorStatus" role="status"></p>
+        </form>
+      </aside>
+    </div>
+  </main>
+
+  <script src="/assets/js/calendar-text.js?v=1" defer></script>
+  <script src="/assets/js/calendar.js?v=5" defer></script>
+</body>
+</html>

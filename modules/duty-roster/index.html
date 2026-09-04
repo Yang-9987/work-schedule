@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>值周排班</title>
+  <link rel="stylesheet" href="/assets/css/duty-roster.css?v=6" />
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部 -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-logo">值</div>
+          <div class="brand-text">
+            <div class="brand-title">值周排班</div>
+            <div class="brand-sub" id="termText">行政干部值周安排</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="topbar-updated" id="rosterUpdated" title="数据更新时间"></span>
+          <button class="admin-entry" id="adminEntry" aria-label="管理入口" title="管理">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <p id="previewProof" class="preview-proof" hidden>本地预览 · 尚未同步到线上</p>
+    <p id="rosterIssues" class="preview-proof" role="status" hidden></p>
+    <!-- 今日值班 Hero -->
+    <section class="hero-wrap">
+      <div class="hero" id="todayDuty" hidden>
+        <!-- 动态填充 -->
+      </div>
+    </section>
+
+    <!-- 视图容器 -->
+    <main class="content" id="rosterContent">
+      <!-- 动态填充 -->
+    </main>
+
+    <!-- 底部 Tab -->
+    <nav class="tabbar" id="tabbar" hidden>
+      <button class="tab active" data-view="week">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="13" r="1.3" fill="currentColor"/><circle cx="15" cy="13" r="1.3" fill="currentColor"/></svg></span><span class="tab-label">本周</span>
+      </button>
+      <button class="tab" data-view="month">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v3M16 3v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="tab-label">月历</span>
+      </button>
+      <button class="tab" data-view="person">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="tab-label">查人</span>
+      </button>
+      <button class="tab" data-view="notice">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="tab-label">须知</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="/assets/js/duty-roster.js?v=10" defer></script>
+</body>
+</html>

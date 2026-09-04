@@ -1,3 +1,17 @@
 server.js
 data/
 部署说明.md
+local-console/
+assets/css/local-console.css
+assets/js/local-console.js
+assets/js/local-releases.js
+shared/release-client.cjs
+shared/wecom-bridge.cjs
+shared/paged-read.cjs
+shared/local-console-auth.cjs
+shared/preview-model.cjs
+config/wecom-calendar.local.json
+release-artifacts/
+scripts/
+docs/
+.github/
