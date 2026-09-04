@@ -88,7 +88,7 @@ button, input, select, textarea { font: inherit; }
 .section-heading .eyebrow { color: var(--green); }
 .section-heading h2 { margin: 0; font-size: clamp(24px, 4vw, 34px); }
 .section-heading > span { color: var(--ink-soft); font-size: 13px; }
-.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.module-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
 .module-card {
   position: relative;
   min-height: 300px;
@@ -113,6 +113,8 @@ button, input, select, textarea { font: inherit; }
   font: 700 24px "STKaiti", "KaiTi", serif;
 }
 .module-card--calendar .module-card__index { background: var(--green); }
+.module-card--duty .module-card__index { background: #b45309; }
+.module-card--duty .module-card__action { color: #b45309; }
 .module-card__meta { margin: 0 0 8px; color: var(--ink-soft); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
 .module-card h3 { margin: 0; font-size: 28px; }
 .module-card p:not(.module-card__meta) { max-width: 410px; margin: 14px 0 30px; color: var(--ink-soft); line-height: 1.75; }

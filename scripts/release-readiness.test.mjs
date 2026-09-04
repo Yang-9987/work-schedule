@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { hasBlobConfig } from '../api/_lib/blob-config.mjs';
 import assert from 'node:assert/strict';
 import { createVersionedStore, assertWritable, storageScope } from '../api/_lib/versioned-store.mjs';
@@ -16,6 +17,19 @@ test('Blob accepts runtime OIDC without weakening production write gates', () =>
   assert.equal(hasBlobConfig(env), true);
   assert.doesNotThrow(() => assertWritable(env));
   assert.throws(() => assertWritable({...env, VERCEL_ENV:'production', DATA_ENV:'main'}));
+});
+
+test('homepage exposes all three deployed modules without development placeholders', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  for (const route of ['/work-schedule/', '/school-calendar/', '/duty-roster/']) {
+    assert.equal(html.split('href="' + route + '"').length - 1, 1);
+    const rewrite = config.rewrites.find(item => item.source === route);
+    assert(rewrite);
+    assert(readFileSync(new URL('..' + rewrite.destination, import.meta.url), 'utf8').includes('<html'));
+  }
+  assert(html.includes('3 个功能'));
+  assert(!/开发中|建设中|查看进度|module-card--developing/.test(html));
 });
 
 function memoryStore() {
