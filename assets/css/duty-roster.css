@@ -1,12 +1,12 @@
 :root {
-  --primary: #ff7a00;
-  --primary-deep: #f26800;
-  --primary-soft: #fff3e6;
-  --primary-grad: linear-gradient(135deg, #ffa14d 0%, #ff7a00 100%);
-  --bg: #f4f5f7;
+  --primary: #b65f17;
+  --primary-deep: #974f12;
+  --primary-soft: #fff3e8;
+  --primary-grad: #fff;
+  --bg: #f4f7f7;
   --card: #ffffff;
-  --text: #1f2329;
-  --text-2: #6b7280;
+  --text: #183247;
+  --text-2: #607385;
   --text-3: #9aa0a8;
   --line: #eceef1;
   --green: #22a06b;
@@ -14,8 +14,8 @@
   --blue: #2f6bff;
   --blue-soft: #eaf1ff;
   --red: #e5484d;
-  --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 4px 16px rgba(16, 24, 40, .06);
-  --radius: 14px;
+  --shadow: none;
+  --radius: 10px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -30,7 +30,7 @@ html, body {
 }
 
 .app {
-  max-width: 480px;
+  max-width: 1040px;
   margin: 0 auto;
   min-height: 100%;
   display: flex;
@@ -44,8 +44,8 @@ html, body {
   top: 0;
   z-index: 20;
   background: var(--primary-grad);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(255, 122, 0, .28);
+  color: var(--text);
+  box-shadow: none;
 }
 .topbar-inner {
   display: flex;
@@ -56,7 +56,8 @@ html, body {
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-logo {
   width: 38px; height: 38px; border-radius: 10px;
-  background: rgba(255,255,255,.22);
+  background: var(--primary-soft);
+  color: var(--primary-deep);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: 700;
 }
@@ -64,20 +65,6 @@ html, body {
 .brand-sub { font-size: 11px; opacity: .92; margin-top: 1px; }
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
 .topbar-updated { font-size: 11px; opacity: .9; }
-.admin-entry {
-  position: relative;
-  width: 34px; height: 34px; border-radius: 9px;
-  background: rgba(255,255,255,.2); color: #fff;
-  border: none; cursor: pointer; flex: none;
-  display: flex; align-items: center; justify-content: center;
-}
-.admin-entry:active { background: rgba(255,255,255,.34); }
-.admin-entry.logged-in::after {
-  content: ''; position: absolute; top: 5px; right: 5px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #3ddc84; box-shadow: 0 0 0 2px #fff;
-}
-
 /* ---------- Hero 今日值班 ---------- */
 .hero-wrap { padding: 14px 14px 2px; }
 .hero {
@@ -243,3 +230,83 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-
 .month-detail { padding: 0 14px 14px; }
 .legend { padding: 0 14px 12px; color: var(--text-2); font-size: 12px; }
 .day-unassigned { color: var(--text-3); }
+
+/* Wide-screen daily ledger, with the same readable rows on a phone. */
+.topbar { position: static; background: transparent; }
+.topbar-inner { padding: 28px 20px 18px; gap: 12px; }
+.brand-title { font-size: 26px; letter-spacing: -.03em; }
+.brand-sub { font-size: 12px; color: var(--text-2); }
+.topbar-updated { font-size: 12px; color: var(--text-2); }
+.hero-wrap { padding: 0 20px; }
+.hero,.card { border: 1px solid var(--line); }
+.hero-head { padding: 20px 20px 12px; gap: 12px; flex-wrap: wrap; }
+.hero-label { color: var(--text); font-size: 15px; }
+.hero-body { padding: 0 20px 20px; }
+.hero-date,.day-date,.nav-title,.person-month,.person-row time,.mg-cell .num { font-variant-numeric: tabular-nums; }
+.leader-chip { border: 0; border-left: 3px solid var(--primary); border-radius: 5px; text-align: left; padding: 12px 16px; }
+.leader-chip .role { font-size: 12px; }
+.leader-chip .name { font-size: 24px; }
+.content { padding: 18px 20px 32px; }
+.nav-row { padding: 16px; gap: 8px; }
+.nav-btn { min-width: 64px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); background: #fff; font-family: inherit; }
+.nav-title { text-align: center; font-size: 17px; }
+.week-list { padding: 0 16px 12px; }
+.day-row { border-radius: 0; padding: 14px 8px; gap: 18px; min-height: 72px; }
+.day-row.today { border-left: 3px solid var(--primary); padding-left: 5px; }
+.day-date .d { font-family: "SFMono-Regular",Consolas,Menlo,monospace; font-size: 23px; }
+.day-date .m { color: var(--text-2); font-size: 11px; }
+.day-week { font-size: 13px; }
+.day-names { font-size: 16px; }
+.day-row.off { opacity: 1; color: var(--text-2); }
+.day-unassigned { color: var(--text-2); font-weight: 400; }
+.mg-cell { min-height: 96px; padding: 8px 3px; }
+.mg-cell .num { font-size: 16px; }
+.mg-cell .who { font-size: 13px; line-height: 1.6; }
+.person-pills { grid-template-columns: repeat(6,minmax(0,1fr)); padding: 20px; gap: 10px; }
+.pill { font-size: 15px; color: var(--text); background: #fff; }
+.person-result { padding: 0 20px 20px; }
+.person-stat { font-size: 14px; }
+.person-row { min-height: 44px; }
+.notice-item { padding: 18px 20px; }
+.notice-item .t { font-size: 15px; }
+.notice-item .v { font-size: 14px; line-height: 1.8; }
+.card-head { padding: 20px 20px 8px; }
+.card-title { font-size: 17px; }
+.tabbar { max-width: 1000px; margin: auto; border: 1px solid var(--line); border-bottom: 0; border-radius: 12px 12px 0 0; }
+.tabbar .tab { min-height: 48px; font-family: inherit; font-size: 12px; color: var(--text-2); }
+.tabbar .tab.active { color: var(--primary-deep); }
+.preview-proof { margin-left: 20px; margin-right: 20px; }
+@media(max-width:620px) {
+ .topbar-inner { padding: 20px 12px 16px; }
+ .brand-title { font-size: 23px; }
+ .brand-logo { width: 34px; height: 38px; }
+ .topbar-updated { max-width: 76px; text-align: right; font-size: 11px; }
+ .hero-wrap { padding: 0 12px; }
+ .hero-head { padding: 16px 14px 12px; }
+ .hero-body { padding: 0 14px 16px; }
+ .hero-date { font-size: 12px; }
+ .leader-chip { min-width: 100px; padding: 10px; }
+ .leader-chip .name { font-size: 22px; }
+ .content { padding: 14px 12px 24px; }
+ .nav-row { padding: 10px 8px; gap: 4px; }
+ .nav-title { font-size: 14px; }
+ .nav-btn { min-width: 56px; padding: 6px; font-size: 12px; }
+ .week-list { padding: 0 8px 8px; }
+ .day-row { gap: 8px; padding: 12px 4px; }
+ .day-row.today { padding-left: 1px; }
+ .day-date { min-width: 32px; }
+ .day-date .d { font-size: 20px; }
+ .day-week { min-width: 28px; font-size: 12px; }
+ .day-names { font-size: 14px; }
+ .day-tag { padding: 2px 5px; font-size: 10px; }
+ .mg-cell { min-height: 74px; padding: 5px 1px; }
+ .mg-cell .num { font-size: 13px; }
+ .mg-cell .who { font-size: 10px; }
+ .month-grid { padding: 4px 6px 12px; gap: 3px; }
+ .person-pills { grid-template-columns: repeat(3,minmax(0,1fr)); padding: 14px; gap: 8px; }
+ .person-result { padding: 0 14px 16px; }
+ .notice-item { padding: 14px; }
+ .card-head { padding: 16px 14px 8px; }
+ .tabbar { border-radius: 0; }
+}
+@media(max-width:340px) { .person-pills { grid-template-columns: repeat(2,minmax(0,1fr)); } }

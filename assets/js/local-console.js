@@ -273,7 +273,7 @@
 
   function renderModules() {
     els.moduleList.innerHTML = mappingSet.modules.map(function (module) {
-      return '<button class="module-button' + (module.id === selectedModuleId ? " active" : "") + '" data-module="' + escapeHtml(module.id) + '" type="button">' +
+      return '<button class="module-button' + (module.id === selectedModuleId ? " active" : "") + '" aria-pressed="' + (module.id === selectedModuleId ? "true" : "false") + '" data-module="' + escapeHtml(module.id) + '" type="button">' +
         '<span class="module-icon">' + escapeHtml(module.name.slice(0, 1)) + '</span><span><strong>' + escapeHtml(module.name) + '</strong><small>' + escapeHtml(module.route) + '</small></span></button>';
     }).join("");
     Array.prototype.forEach.call(els.moduleList.querySelectorAll("[data-module]"), function (button) {
@@ -320,6 +320,17 @@
     els.fieldSummary.innerHTML = discoveredFields.map(function (field) {
       return '<span class="field-chip">' + escapeHtml(field.name) + ' · ' + escapeHtml(field.typeLabel || field.type) + '</span>';
     }).join("");
+  }
+
+  function invalidateSourceFields() {
+    discoveredFields = [];
+    var draft = draftFor(currentModule());
+    draft.fields = [];
+    draft.sheet = els.sheetSelect.value;
+    renderFields();
+    renderMappings();
+    clearPreview();
+    els.saveHint.textContent = "数据源已变化，请重新读取字段后再预览或保存。";
   }
 
   function normalizedName(value) {
@@ -422,6 +433,7 @@
     }).filter(Boolean);
     if (!module.source.documentUrl) errors.push("请填写智能表格链接");
     if (!module.source.sheet) errors.push("请选择子表");
+    if (!discoveredFields.length) errors.push("请先读取当前子表的字段");
     return errors;
   }
 
@@ -437,6 +449,11 @@
       draft.documentInfo = body.document.documentName + " · " + discoveredSheets.length + " 个子表";
       els.documentInfo.textContent = body.document.documentName + " · " + discoveredSheets.length + " 个子表";
       renderSheetOptions(draft.sheet || "");
+      var selected = discoveredSheets.find(function (item) { return item.title === els.sheetSelect.value; });
+      if (draft.sheet !== els.sheetSelect.value || normalizedDocumentUrl(url) !== normalizedDocumentUrl(currentModule().source.documentUrl) ||
+          (selected && selected.fieldCount !== undefined && selected.fieldCount !== discoveredFields.length)) {
+        invalidateSourceFields();
+      }
       toast("子表读取完成");
     }).catch(function (error) { toast(error.message); }).finally(function () {
       setBusy(document.getElementById("discoverButton"), false, "读取子表");
@@ -446,9 +463,12 @@
   function loadFields() {
     var url = els.documentUrl.value.trim();
     var sheet = els.sheetSelect.value;
+    var moduleId = selectedModuleId;
     if (!url || !sheet) return toast("请先选择智能表格和子表");
     setBusy(document.getElementById("fieldsButton"), true, "读取中");
     post("/api/local-console/fields", { documentUrl: url, sheet: sheet }).then(function (body) {
+      if (selectedModuleId !== moduleId || els.sheetSelect.value !== sheet ||
+          normalizedDocumentUrl(els.documentUrl.value) !== normalizedDocumentUrl(url)) return;
       discoveredFields = body.fields;
       var draft = draftFor(currentModule());
       draft.documentUrl = url;
@@ -642,6 +662,14 @@
   document.getElementById("refreshStatus").addEventListener("click", loadStatus);
   document.getElementById("discoverButton").addEventListener("click", discover);
   document.getElementById("fieldsButton").addEventListener("click", loadFields);
+  els.sheetSelect.addEventListener("change", invalidateSourceFields);
+  els.documentUrl.addEventListener("change", function () {
+    if (normalizedDocumentUrl(els.documentUrl.value) === draftFor(currentModule()).documentUrl) return;
+    discoveredSheets = [];
+    renderSheetOptions("");
+    invalidateSourceFields();
+    draftFor(currentModule()).documentUrl = normalizedDocumentUrl(els.documentUrl.value);
+  });
   document.getElementById("saveButton").addEventListener("click", saveMapping);
   document.getElementById("previewButton").addEventListener("click", preview);
   document.getElementById("previewPageButton").addEventListener("click", previewPage);

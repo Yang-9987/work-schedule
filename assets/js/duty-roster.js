@@ -101,7 +101,7 @@
     return html + '</section>';
   }
   function renderPerson() {
-    if (!personnel.length) return '<section class="card"><p class="empty-hint">暂无人员，请检查人员字段映射。</p></section>';
+    if (!personnel.length) return '<section class="card"><p class="empty-hint">暂无人员安排。</p></section>';
     if (!state.person) state.person = personnel[0];
     var list = rows.filter(function (row) { return names(row).indexOf(state.person) !== -1 && row.type !== "holiday"; });
     var dates = Array.from(new Set(list.map(function (row) { return row.date; }))).sort();
@@ -161,7 +161,7 @@
       });
       if (parsed.original) html += '<div class="notice-item"><div><h3 class="t">时间段原文（请核对格式）</h3><p class="v">' + safe(parsed.original) + '</p></div></div>';
     });
-    if (!groups.size) html += '<div class="notice-item"><p class="v">暂无时间段数据。请在工作台将表格的“时间段”列映射到“时间段 · shift”，然后重新生成预览。</p></div>';
+    if (!groups.size) html += '<div class="notice-item"><p class="v">暂无时间段数据。</p></div>';
     else if (!allHaveTime) html += '<div class="notice-item"><p class="v">部分值班记录未填写时间段，请核对表格。</p></div>';
     return html + '</section><section class="card"><div class="card-head"><h2 class="card-title">值周须知</h2></div><div class="notice-item"><p class="v">' + safe(data.notice || "尚未配置值周须知。") + '</p></div></section>';
   }
@@ -181,15 +181,12 @@
     el("rosterUpdated").textContent = localPreview ? "预览 " + new Date(preview.generatedAt).toLocaleDateString("zh-CN") : '已发布';
     el("previewProof").hidden = !localPreview;
     var issues = (preview.issues || []).slice();
-    if (rows.length !== (data.rows || []).length) issues.push("无效日期记录未显示，请返回工作台核对。");
+    if (rows.length !== (data.rows || []).length) issues.push("部分日期信息暂不可用。");
     el("rosterIssues").hidden = !issues.length;
     el("rosterIssues").textContent = issues.join("\n");
     el("tabbar").hidden = false;
     renderToday(); renderView();
   }
-  el("adminEntry").addEventListener("click", function () {
-    location.href = localPreview ? "/local-console/" : "/admin/mappings/";
-  });
   el("tabbar").addEventListener("click", function (event) {
     var button = event.target.closest("[data-view]");
     if (!button) return;
@@ -222,5 +219,5 @@
       if (!response.ok || !(localPreview ? body.preview : body.data)) throw new Error(body.error || "无法读取排班");
       return localPreview ? body.preview : { data: body.data, issues: [] };
     });
-  }).then(render).catch(function (error) { showError(error.message + (localPreview ? "，请返回本地工作台重新生成。" : "")); });
+  }).then(render).catch(function () { showError(localPreview ? "预览暂不可用，请重新生成预览后刷新。" : "值班安排暂时无法读取，请稍后刷新。"); });
 })();

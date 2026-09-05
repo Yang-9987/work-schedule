@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <title>作息时间表 · 校园工作台</title>
-<link rel="stylesheet" href="/assets/css/app-shell.css">
+<link rel="stylesheet" href="/assets/css/app-shell.css?v=3">
 <style>
   :root {
     --primary: #2b6cff;
@@ -46,14 +46,7 @@
     border-radius: 0 0 26px 26px;
     position: relative;
   }
-  .gear {
-    position: absolute; top: 14px; right: 14px;
-    width: 34px; height: 34px; border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.35);
-    background: rgba(255,255,255,.14);
-    color: #fff; font-size: 17px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
+
   .hero-top { display: flex; justify-content: space-between; align-items: flex-start; padding-right: 40px; }
   .hero-date { font-size: 13px; opacity: .85; }
   .hero-week { font-size: 15px; font-weight: 600; margin-top: 2px; }
@@ -83,7 +76,7 @@
   .today-card h3 { font-size: 13px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; }
   .today-card h3 .pct { color: var(--primary); font-variant-numeric: tabular-nums; }
   .progress-track { height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; }
-  .progress-bar { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #2b6cff, #5a3fff); width: 0%; transition: width .6s ease; }
+  .progress-bar { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #2b6cff, #5a3fff); width: 0%; transition: none; }
   .progress-marks { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-3); margin-top: 6px; font-variant-numeric: tabular-nums; }
 
   .section-title { margin: 20px 16px 10px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
@@ -134,158 +127,9 @@
 
   .footer { text-align: center; color: var(--text-3); font-size: 11px; margin-top: 22px; }
 
-  /* ===== 管理后台 ===== */
-  #admin { display: none; padding: 0 14px calc(184px + env(safe-area-inset-bottom)); }
-  .admin-head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin: 18px 2px 14px;
-  }
-  .admin-head h2 { font-size: 19px; }
-  .btn-back {
-    border: 1px solid var(--line); background: var(--card); color: var(--text);
-    border-radius: 20px; padding: 7px 16px; font-size: 13px; cursor: pointer;
-  }
-  .acard { background: var(--card); border-radius: var(--radius); padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(26,34,51,.05); }
-  .acard h4 { font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-  .acard h4::before { content:""; width: 4px; height: 13px; border-radius: 2px; background: var(--primary); }
-  .field { margin-bottom: 10px; }
-  .field label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 5px; }
-  .field input, .field textarea, .field select {
-    width: 100%; border: 1px solid var(--line); border-radius: 9px;
-    padding: 10px 12px; font-size: 16px; font-family: inherit; background: #fff; color: var(--text);
-  }
-  .field textarea { resize: vertical; min-height: 64px; }
-  .wd-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .wd-cell { text-align: center; border: 1.5px solid var(--line); border-radius: 9px; padding: 7px 0; font-size: 12px; cursor: pointer; user-select: none; }
-  .wd-cell .wd-n { font-weight: 700; font-size: 15px; }
-  .wd-cell.on { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
-
-  .srow {
-    --row-accent: var(--primary);
-    position: relative; overflow: hidden;
-    border: 1px solid #e5eaf2; border-radius: 14px;
-    padding: 13px 13px 13px 17px; margin-bottom: 11px;
-    background: linear-gradient(145deg, #fff 0%, #f9fbff 100%);
-    box-shadow: 0 3px 12px rgba(26,34,51,.045);
-  }
-  .srow::before {
-    content: ""; position: absolute; left: 0; top: 13px; bottom: 13px;
-    width: 4px; border-radius: 0 4px 4px 0; background: var(--row-accent);
-  }
-  .srow-type-student-entry { --row-accent: #0f766e; }
-  .srow-type-lesson { --row-accent: #1d4ed8; }
-  .srow-type-recess { --row-accent: #15803d; }
-  .srow-type-eye-exercise { --row-accent: #7e22ce; }
-  .srow-type-lunch { --row-accent: #c2410c; }
-  .srow-type-hygiene { --row-accent: #b91c1c; }
-  .srow-type-broadcast { --row-accent: #4338ca; }
-  .srow-type-nap { --row-accent: #0e7490; }
-  .srow-type-club { --row-accent: #be185d; }
-  .srow-line1, .srow-line2, .srow-line3 { display: grid; gap: 10px; min-width: 0; }
-  .srow-line1 { grid-template-columns: minmax(0, 1.15fr) minmax(132px, .85fr); margin-bottom: 10px; }
-  .srow-line2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 10px; }
-  .srow-line3 { grid-template-columns: minmax(0, 1fr) 42px; align-items: end; }
-  .sfield { display: block; min-width: 0; }
-  .sfield-label {
-    display: block; margin: 0 0 5px 2px;
-    color: var(--text-3); font-size: 11px; font-weight: 600; line-height: 1;
-  }
-  .srow input, .srow select {
-    display: block; width: 100%; min-width: 0; height: 42px;
-    border: 1px solid #d9e0ea; border-radius: 10px;
-    padding: 0 11px; background: #fff; color: var(--text);
-    font-family: inherit; font-size: 15px; font-weight: 500; line-height: 1.2; outline: none;
-  }
-  .srow input { -webkit-appearance: none; }
-  .srow select { padding-right: 8px; color: #344054; }
-  .srow input::placeholder { color: #b0b8c6; font-weight: 400; }
-  .srow input:focus, .srow select:focus {
-    border-color: var(--row-accent); box-shadow: 0 0 0 3px rgba(43,108,255,.12);
-  }
-  .srow .del {
-    width: 42px; height: 42px; border: 1px solid #fee2e2; border-radius: 10px;
-    background: #fff7f7; color: var(--danger); font-size: 18px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-  }
-  .btn-add {
-    width: 100%; border: 1.5px dashed var(--primary); background: var(--primary-light);
-    color: var(--primary); border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
-  .import-row { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-  .btn-ghost { border: 1px solid var(--line); background: #fff; color: var(--text-2); border-radius: 9px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
-  .import-status { display: none; margin-top: 10px; border-radius: 9px; padding: 9px 11px; font-size: 12px; line-height: 1.5; }
-  .import-status.show { display: block; }
-  .import-status.loading { color: #175cd3; background: #eff8ff; border: 1px solid #b2ddff; }
-  .import-status.success { color: #067647; background: #ecfdf3; border: 1px solid #abefc6; }
-  .import-status.error { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; }
-  .hint { font-size: 11.5px; color: var(--text-3); margin-top: 6px; line-height: 1.6; }
-  .json-out { width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 9px; padding: 10px; font-size: 11px; font-family: Consolas, Menlo, monospace; color: var(--text-2); background: #fafbfd; }
-
-  .admin-bar {
-    position: fixed; left: 0; right: 0; bottom: 0; max-width: 540px; margin: 0 auto;
-    background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
-    padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 8px; z-index: 9;
-    box-shadow: 0 -10px 28px rgba(26,34,51,.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  }
-  .abar-row { display: flex; gap: 10px; }
-  .abar-secondary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .btn-ghost2 {
-    flex: 1; border: 1px solid var(--line); border-radius: 11px; background: #fff; color: var(--text-3);
-    font-size: 13px; font-weight: 600; padding: 12px 4px; cursor: pointer;
-  }
-  .btn-primary {
-    flex: 1; border: none; border-radius: 11px; background: var(--primary); color: #fff;
-    font-size: 15px; font-weight: 600; padding: 12px 0; cursor: pointer;
-  }
-  .btn-secondary {
-    flex: 1; border: 1px solid var(--line); border-radius: 11px; background: #fff; color: var(--text);
-    min-width: 0; font-size: 13px; font-weight: 600; padding: 12px 4px; cursor: pointer; white-space: nowrap;
-  }
-  @media (max-width: 360px) {
-    .srow-line1 { grid-template-columns: minmax(0, 1fr); }
-    .srow-line3 { grid-template-columns: minmax(0, 1fr) 42px; }
-    .abar-secondary { gap: 6px; }
-    .btn-secondary, .btn-ghost2 { font-size: 12px; }
-  }
-  .admin-tip { background: var(--primary-light); color: #3b5fae; font-size: 12px; border-radius: 10px; padding: 10px 12px; line-height: 1.6; margin: 0 2px 12px; }
-
-  /* ===== 内置密码弹窗（兼容企业微信 WebView） ===== */
-  .login-mask {
-    display: none; position: fixed; inset: 0; z-index: 100;
-    align-items: center; justify-content: center; padding: 22px;
-    background: rgba(15, 23, 42, .52); backdrop-filter: blur(3px);
-  }
-  .login-mask.show { display: flex; }
-  .login-dialog {
-    width: 100%; max-width: 360px; padding: 22px 20px 18px;
-    border-radius: 18px; background: #fff;
-    box-shadow: 0 18px 50px rgba(15, 23, 42, .22);
-  }
-  .login-dialog h3 { font-size: 18px; margin-bottom: 6px; }
-  .login-dialog p { color: var(--text-2); font-size: 13px; margin-bottom: 16px; }
-  .login-dialog input {
-    width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 11px;
-    padding: 0 13px; color: var(--text); background: #fff; font-size: 16px;
-    outline: none; -webkit-appearance: none;
-  }
-  .login-dialog input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43,108,255,.12); }
-  .login-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .login-actions button {
-    flex: 1; border-radius: 11px; padding: 11px 0; font-size: 15px; font-weight: 600; cursor: pointer;
-  }
-  .login-cancel { border: 1px solid var(--line); color: var(--text-2); background: #fff; }
-  .login-submit { border: none; color: #fff; background: var(--primary); }
-  .login-submit:disabled { opacity: .6; }
-
-  #toast {
-    position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-80px);
-    background: rgba(26,34,51,.92); color: #fff; font-size: 13px;
-    padding: 9px 18px; border-radius: 22px; z-index: 99; transition: transform .3s; max-width: 86vw;
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
   .local-preview-note { max-width: 520px; margin: 14px auto 0; padding: 9px 14px; color: #315d4e; border: 1px solid #b7d8ca; border-radius: 10px; background: #e8f5ef; font-size: 12px; text-align: center; }
 </style>
+<link rel="stylesheet" href="/assets/css/work-schedule.css?v=20260906-public4">
 </head>
 <body>
 
@@ -301,8 +145,9 @@
 
 <!-- ==================== 展示端 ==================== -->
 <div id="viewer">
+  <h1 class="page-title">作息时间表</h1>
+  <div class="schedule-summary">
   <div class="hero">
-    <button class="gear" onclick="tryAdmin()" title="管理">⚙</button>
     <div class="hero-top">
       <div>
         <div class="hero-date" id="heroDate"></div>
@@ -328,127 +173,25 @@
     <div class="progress-marks" id="progressMarks"></div>
   </div>
 
-  <div class="section-title">每日作息时间轴</div>
-  <div class="timeline" id="timeline"></div>
-
   <div class="section-title">本周安排</div>
   <div class="week-card" id="weekCard"></div>
 
-  <div class="section-title">温馨提示</div>
+  <div class="section-title" id="tipsTitle">作息提示</div>
   <div class="tips" id="tipsBox"></div>
 
   <div class="footer">校园工作台 · 作息时间表</div>
+  </div>
+  <section class="schedule-timeline" aria-label="每日作息时间轴">
+    <div class="section-title timeline-title">每日作息时间轴</div>
+    <div class="timeline" id="timeline"></div>
+  </section>
 </div>
-
-<!-- ==================== 管理后台 ==================== -->
-<div id="admin">
-  <div class="admin-head">
-    <h2>作息管理后台</h2>
-    <button class="btn-back" onclick="backToViewer()">返回展示</button>
-  </div>
-
-  <div class="admin-tip" id="backendTip">
-    后端状态：检测中…
-  </div>
-
-  <div class="acard">
-    <h4>基本信息</h4>
-    <div class="field">
-      <label>单位名称（显示在页面上方）</label>
-      <input id="fCompany" type="text" placeholder="如：XX学校">
-    </div>
-  </div>
-
-  <div class="acard">
-    <h4>工作日设置（点选）</h4>
-    <div class="wd-grid" id="wdGrid"></div>
-  </div>
-
-  <div class="acard">
-    <h4>每日作息表</h4>
-    <div id="sRows"></div>
-    <button class="btn-add" onclick="addRow()">+ 添加时段</button>
-    <div class="hint">
-      时间格式 HH:MM（如 09:00）；「结束时间」留空表示单点事件。类型可选工作、休息、关键节点及各类校园活动。
-    </div>
-  </div>
-
-  <div class="acard">
-    <h4>温馨提示（每行一条）</h4>
-    <div class="field">
-      <textarea id="fTips" placeholder="每行一条提示"></textarea>
-    </div>
-  </div>
-
-  <div class="acard">
-    <h4>导入作息文件（自动生成）</h4>
-    <input id="fFile" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
-    <div class="import-row">
-      <button class="btn-ghost" onclick="document.getElementById('fFile').click()">选择 CSV / Excel 文件</button>
-      <button class="btn-ghost" onclick="downloadTemplateCSV()">下载模板 (CSV)</button>
-      <button class="btn-ghost" onclick="downloadTemplateXLSX()">下载模板 (Excel)</button>
-    </div>
-    <div id="importStatus" class="import-status" role="status" aria-live="polite"></div>
-    <div class="hint">
-      模板列：<b>名称, 开始时间, 结束时间, 类型, 说明</b>。类型支持：学生入校、上课、大课间活动、眼保健操时间、午餐时间、卫生检查、校园广播、午休时间、社团等。<br>
-      Excel 中可另加「设置」Sheet：公司名称 / 周一~周日(1或0) / 温馨提示，导入后自动填充。
-    </div>
-  </div>
-
-  <div class="acard">
-    <h4>配置预览（JSON）</h4>
-    <textarea id="jsonOut" class="json-out" readonly></textarea>
-    <div class="hint" style="margin-top:8px">此内容即 config.json，可复制后直接上传到服务器。</div>
-  </div>
-
-  <div class="admin-bar">
-    <div class="abar-row abar-publish">
-      <button class="btn-primary" onclick="publishConfig()">保存并发布（全员生效）</button>
-    </div>
-    <div class="abar-row abar-secondary">
-      <button class="btn-secondary" onclick="saveLocal()">仅本机保存</button>
-      <button class="btn-secondary" onclick="exportJson()">导出配置</button>
-      <button class="btn-ghost2" onclick="resetConfig()">恢复默认</button>
-    </div>
-  </div>
-</div>
-
-<div class="login-mask" id="loginMask" aria-hidden="true">
-  <form class="login-dialog" onsubmit="submitAdminLogin(event)">
-    <h3>管理员验证</h3>
-    <p>请输入管理密码后进入作息编辑页。</p>
-    <input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="管理密码" aria-label="管理密码">
-    <div class="login-actions">
-      <button class="login-cancel" type="button" onclick="closeAdminLogin()">取消</button>
-      <button class="login-submit" id="adminLoginSubmit" type="submit">确认进入</button>
-    </div>
-  </form>
-</div>
-
-<div id="toast"></div>
 
 <script>
 /* =====================================================
  * 默认配置（首次使用 / 无 config.json 时的兜底数据）
  * ===================================================== */
-var DEFAULT_CONFIG = {
-  company: "XX科技有限公司",
-  schedule: [
-    { name: "上班打卡",   start: "08:30", end: "",      type: "key",  desc: "迟到 08:31 起算" },
-    { name: "晨会",       start: "09:00", end: "09:30", type: "key",  desc: "部门晨会 / 站会" },
-    { name: "上午工作",   start: "09:30", end: "12:00", type: "work", desc: "专注工作时间" },
-    { name: "午休",       start: "12:00", end: "13:30", type: "rest", desc: "午餐 + 午休" },
-    { name: "下午工作",   start: "13:30", end: "18:00", type: "work", desc: "专注工作时间" },
-    { name: "下班打卡",   start: "18:00", end: "",      type: "key",  desc: "早退 17:59 前算" }
-  ],
-  workdays: [false, true, true, true, true, true, false],  // 周日~周六
-  tips: [
-    "弹性上下班：可在 08:00–09:30 之间到岗，相应顺延下班时间。",
-    "午休时段请保持安静，会议室可提前在「日程」中预订。",
-    "加班需提前在 OA 提交申请，21:00 后打车可报销。",
-    "法定节假日的安排以行政通知为准。"
-  ]
-};
+var DEFAULT_CONFIG = { company: "", schedule: [], workdays: [false,true,true,true,true,true,false], tips: [] };
 var WEEK_NAMES = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 var TYPE_META = {
   work:          { label: "工作",         className: "tag-work" },
@@ -465,8 +208,6 @@ var TYPE_META = {
   club:          { label: "社团",         className: "tag-club" }
 };
 var cfg = null;          // 当前生效配置
-var isAdmin = false;
-var sessionAdminPass = ""; // 仅存内存，关闭页面即清除
 var LOCAL_PREVIEW = false;
 try { LOCAL_PREVIEW = new URLSearchParams(location.search).get("localPreview") === "1"; } catch (e) {}
 
@@ -501,13 +242,7 @@ function normalizeConfig(j){
   if (!c.tips.length) c.tips = deepCopy(DEFAULT_CONFIG.tips);
   return c;
 }
-function loadLocal(){
-  try {
-    var s = localStorage.getItem("scheduleConfig");
-    if (s) return normalizeConfig(JSON.parse(s));
-  } catch (e) {}
-  return deepCopy(DEFAULT_CONFIG);
-}
+function loadLocal(){ return deepCopy(DEFAULT_CONFIG); }
 function fetchJson(url){
   return fetch(url + "?t=" + Date.now()).then(function(r){
     if (!r.ok) throw new Error("not found");
@@ -528,14 +263,12 @@ function loadConfig(cb){
     }).then(function(j){
       cfg = normalizeConfig(j);
       document.getElementById("localPreviewNote").hidden = false;
-      document.querySelector(".gear").hidden = true;
       cb();
     }).catch(function(error){
       cfg = deepCopy(DEFAULT_CONFIG);
       var note = document.getElementById("localPreviewNote");
       note.hidden = false;
       note.textContent = error.message + "，请返回本地工作台重新生成。";
-      document.querySelector(".gear").hidden = true;
       cb();
     });
     return;
@@ -546,7 +279,7 @@ function loadConfig(cb){
       .catch(function(){ cfg = loadLocal(); cb(); });
     return;
   }
-  // 2) 后端配置（server.js 部署后，管理后台发布即全员生效）
+  // 读取公开作息数据
   fetchJson("/api/schedule").then(function(j){
     cfg = normalizeConfig(j);
     cb();
@@ -580,13 +313,7 @@ function nextEvent(list, now){
   }
   return null;
 }
-function toast(msg){
-  var t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(t._timer);
-  t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
-}
+
 
 /* ============ 展示端渲染 ============ */
 function renderHero(now){
@@ -602,8 +329,9 @@ function renderHero(now){
   var main, sub, dot = document.getElementById("statusDot");
   dot.className = "status-dot";
 
-  if (!isWorkday) {
-    main = "今日休息日"; sub = "祝您好好放松，充满电再出发 ⚡"; dot.classList.add("rest");
+  if (!cfg.schedule.length) { main = "暂无作息安排"; sub = ""; dot.classList.add("off");
+  } else if (!isWorkday) {
+    main = "今日休息日"; sub = "本周安排见下方"; dot.classList.add("rest");
   } else if (cur) {
     main = "当前：" + cur.name;
     if (cur.end) {
@@ -616,15 +344,16 @@ function renderHero(now){
     var wait = toMin(nxt.start) - nowMin(now);
     sub = "下一项：" + nxt.name + "（" + (wait > 60 ? Math.round(wait / 60 * 10) / 10 + " 小时后" : wait + " 分钟后") + "）";
   } else {
-    main = "今日作息已结束"; sub = "辛苦了，早点回家休息 🌙"; dot.classList.add("off");
+    main = "今日作息已结束"; sub = ""; dot.classList.add("off");
   }
   document.getElementById("statusMain").textContent = main;
   document.getElementById("statusSub").textContent = sub;
 }
+function escapeText(value){ return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 function renderTimeline(now){
   var wrap = document.getElementById("timeline"), nm = nowMin(now), wd = now.getDay();
   var cur = cfg.workdays[wd] ? getCurrent(cfg.schedule, nm) : null;
-  wrap.innerHTML = "";
+  wrap.innerHTML = cfg.schedule.length ? "" : '<div class="empty-state">暂无作息数据，请稍后刷新重试。</div>';
   cfg.schedule.forEach(function(it){
     var s = toMin(it.start), e = it.end ? toMin(it.end) : s;
     var el = document.createElement("div");
@@ -640,25 +369,26 @@ function renderTimeline(now){
     el.innerHTML =
       '<div class="tl-time">' + timeHtml + '</div>' +
       '<div class="tl-dot"></div>' +
-      '<div class="tl-body"><div class="tl-name">' + it.name + '</div>' +
-      (it.desc ? '<div class="tl-desc">' + it.desc + '</div>' : '') + '</div>' +
+      '<div class="tl-body"><div class="tl-name">' + escapeText(it.name) + '</div>' +
+      (it.desc ? '<div class="tl-desc">' + escapeText(it.desc) + '</div>' : '') + '</div>' +
       '<div class="tl-tag ' + (cur === it ? "tag-now" : tagClass) + '">' + (cur === it ? "进行中" : tagText) + '</div>';
     wrap.appendChild(el);
   });
 }
 function renderProgress(now){
+  if (!cfg.schedule.length) { document.getElementById("dayPct").textContent = "—"; document.getElementById("dayBar").style.width = "0%"; return; }
   var wd = now.getDay();
   if (!cfg.workdays[wd]) {
     document.getElementById("dayPct").textContent = "休息日";
     document.getElementById("dayBar").style.width = "0%";
-    document.getElementById("progressMarks").innerHTML = "<span>今天不上班，好好休息～</span>";
+    document.getElementById("progressMarks").innerHTML = "<span>今日休息</span>";
     return;
   }
   var s = toMin(cfg.schedule[0].start);
   var last = cfg.schedule[cfg.schedule.length - 1];
   var e = toMin(last.end || last.start);
   var nm = nowMin(now);
-  var pct = Math.max(0, Math.min(100, (nm - s) / (e - s) * 100));
+  var pct = Math.max(0, Math.min(100, (e > s ? (nm - s) / (e - s) * 100 : nm >= s ? 100 : 0)));
   document.getElementById("dayPct").textContent = Math.round(pct) + "%";
   document.getElementById("dayBar").style.width = pct + "%";
   document.getElementById("progressMarks").innerHTML =
@@ -679,523 +409,14 @@ function renderWeek(now){
   }
 }
 function renderTips(){
+  document.getElementById("tipsTitle").hidden = !cfg.tips.length;
+  document.getElementById("tipsBox").hidden = !cfg.tips.length;
   document.getElementById("tipsBox").innerHTML =
-    cfg.tips.map(function(t){ return "<div>· " + t + "</div>"; }).join("");
+    cfg.tips.map(function(t){ return "<div>· " + escapeText(t) + "</div>"; }).join("");
 }
 function renderViewer(){
   var now = new Date();
   renderHero(now); renderTimeline(now); renderProgress(now); renderWeek(now); renderTips();
-}
-
-/* ============ 管理后台 ============ */
-function adminPass(){
-  return sessionAdminPass;
-}
-function tryAdmin(){
-  if (isAdmin) { openAdmin(); return; }
-  var mask = document.getElementById("loginMask");
-  var input = document.getElementById("adminPasswordInput");
-  input.value = "";
-  mask.classList.add("show");
-  mask.setAttribute("aria-hidden", "false");
-  setTimeout(function(){ input.focus(); }, 50);
-}
-function closeAdminLogin(){
-  var mask = document.getElementById("loginMask");
-  mask.classList.remove("show");
-  mask.setAttribute("aria-hidden", "true");
-  document.getElementById("adminPasswordInput").blur();
-}
-function finishAdminLogin(p){
-  sessionAdminPass = p;
-  isAdmin = true;
-  closeAdminLogin();
-  openAdmin();
-}
-function setAdminLoginBusy(busy){
-  var button = document.getElementById("adminLoginSubmit");
-  button.disabled = busy;
-  button.textContent = busy ? "验证中…" : "确认进入";
-}
-function submitAdminLogin(event){
-  event.preventDefault();
-  var input = document.getElementById("adminPasswordInput");
-  var p = input.value;
-  if (!p) { toast("请输入管理密码"); input.focus(); return; }
-  setAdminLoginBusy(true);
-  fetch("/api/auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ adminPass: p })
-  }).then(function(r){
-    if (r.status === 401) {
-      setAdminLoginBusy(false);
-      toast("密码错误");
-      input.select();
-      return false;
-    }
-    if (!r.ok) throw new Error("backend unavailable");
-    return true;
-  }).then(function(ok){
-    if (!ok) return;
-    setAdminLoginBusy(false);
-    finishAdminLogin(p);
-  }).catch(function(){
-    setAdminLoginBusy(false);
-    toast("管理员验证服务暂时不可用");
-  });
-}
-function openAdmin(){
-  document.getElementById("viewer").style.display = "none";
-  document.getElementById("admin").style.display = "block";
-  fillForm();
-  refreshJson();
-  checkBackend();
-  window.scrollTo(0, 0);
-}
-function backToViewer(){
-  document.getElementById("admin").style.display = "none";
-  document.getElementById("viewer").style.display = "block";
-  renderViewer();
-  window.scrollTo(0, 0);
-}
-
-function fillForm(){
-  document.getElementById("fCompany").value = cfg.company;
-  document.getElementById("fTips").value = cfg.tips.join("\n");
-  renderWdGrid();
-  document.getElementById("sRows").innerHTML = "";
-  cfg.schedule.forEach(addRow);
-}
-function renderWdGrid(){
-  var box = document.getElementById("wdGrid");
-  box.innerHTML = "";
-  for (var i = 0; i < 7; i++){
-    (function(idx){
-      var el = document.createElement("div");
-      el.className = "wd-cell" + (cfg.workdays[idx] ? " on" : "");
-      el.innerHTML = '<div class="wd-n">' + WEEK_NAMES[idx].replace("周", "") + '</div><div>' + (cfg.workdays[idx] ? "上班" : "休") + '</div>';
-      el.onclick = function(){
-        cfg.workdays[idx] = !cfg.workdays[idx];
-        renderWdGrid();
-        refreshJson();
-      };
-      box.appendChild(el);
-    })(i);
-  }
-}
-function addRow(it){
-  it = it || { name: "", start: "", end: "", type: "work", desc: "" };
-  var box = document.getElementById("sRows");
-  var row = document.createElement("div");
-  row.className = "srow";
-  var typeOptions = Object.keys(TYPE_META).map(function(type){
-    return '<option value="' + type + '"' + (it.type === type ? " selected" : "") + '>' + TYPE_META[type].label + '</option>';
-  }).join("");
-  row.innerHTML =
-    '<div class="srow-line1">' +
-      '<label class="sfield"><span class="sfield-label">时段名称</span>' +
-        '<input class="s-name" placeholder="如：第一节课" value="' + esc(it.name) + '"></label>' +
-      '<label class="sfield"><span class="sfield-label">节点类型</span>' +
-        '<select class="s-type">' + typeOptions + '</select></label>' +
-    '</div>' +
-    '<div class="srow-line2">' +
-      '<label class="sfield"><span class="sfield-label">开始时间</span>' +
-        '<input class="s-start" inputmode="numeric" placeholder="09:00" value="' + esc(it.start) + '"></label>' +
-      '<label class="sfield"><span class="sfield-label">结束时间</span>' +
-        '<input class="s-end" inputmode="numeric" placeholder="可留空" value="' + esc(it.end) + '"></label>' +
-    '</div>' +
-    '<div class="srow-line3">' +
-      '<label class="sfield"><span class="sfield-label">说明</span>' +
-        '<input class="s-desc" placeholder="选填" value="' + esc(it.desc) + '"></label>' +
-      '<button class="del" type="button" onclick="delRow(this)" aria-label="删除该时段">✕</button>' +
-    '</div>';
-  box.appendChild(row);
-  row.querySelectorAll("input").forEach(function(inp){
-    inp.oninput = refreshJson;
-  });
-  row.querySelector(".s-type").onchange = function(){
-    applyRowTypeStyle(row);
-    refreshJson();
-  };
-  applyRowTypeStyle(row);
-}
-function applyRowTypeStyle(row){
-  var type = row.querySelector(".s-type").value.replace(/_/g, "-");
-  row.className = "srow srow-type-" + type;
-}
-function delRow(btn){ btn.closest(".srow").remove(); refreshJson(); }
-function esc(s){ return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-function collectForm(){
-  var c = {
-    company: document.getElementById("fCompany").value.trim() || DEFAULT_CONFIG.company,
-    schedule: [],
-    workdays: cfg.workdays.slice(),
-    tips: document.getElementById("fTips").value.split("\n").map(function(t){ return t.trim(); }).filter(Boolean)
-  };
-  var ok = true;
-  document.querySelectorAll("#sRows .srow").forEach(function(row){
-    var name = row.querySelector(".s-name").value.trim();
-    var start = normalizeTime(row.querySelector(".s-start").value);
-    var end = row.querySelector(".s-end").value.trim() ? normalizeTime(row.querySelector(".s-end").value) : "";
-    var type = row.querySelector(".s-type").value;
-    var desc = row.querySelector(".s-desc").value.trim();
-    if (!name || !start) return;                       // 空行跳过
-    if (end && toMin(end) <= toMin(start)) { ok = false; toast("「" + name + "」结束时间须晚于开始时间"); return; }
-    c.schedule.push({ name: name, start: start, end: end, type: type, desc: desc });
-  });
-  if (!c.schedule.length) { toast("请至少保留一个时段"); return null; }
-  if (!ok) return null;
-  return c;
-}
-function publicConfig(c){
-  var j = JSON.parse(JSON.stringify(c));
-  delete j.adminPass;
-  return j;
-}
-function refreshJson(){
-  var c = collectForm();
-  document.getElementById("jsonOut").value = c ? JSON.stringify(publicConfig(c), null, 2) : "";
-}
-var backendOnline = false;
-function checkBackend(){
-  fetch("/api/health?t=" + Date.now()).then(function(r){
-    return r.ok;
-  }).catch(function(){ return false; }).then(function(ok){
-    backendOnline = ok;
-    var tip = document.getElementById("backendTip");
-    if (tip) {
-      tip.innerHTML = ok
-        ? "后端：<b style='color:#12b76a'>已连接</b> · 点「保存并发布」即可全员即时生效"
-        : "后端：<b style='color:#f79009'>未连接</b> · 仅「仅本机保存 / 导出」生效。<br><span style='font-size:11.5px'>部署 server.js 后自动启用全员发布（详见部署说明）。</span>";
-    }
-  });
-}
-function publishConfig(){
-  if (!backendOnline) { toast("后端未连接，无法发布"); return; }
-  var c = collectForm();
-  if (!c) return;
-  fetch("/api/schedule", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ adminPass: adminPass(), config: publicConfig(c) })
-  }).then(function(r){
-    if (r.status === 401) { toast("发布失败：密码错误（请检查服务器端 adminPass）"); return null; }
-    if (!r.ok) { toast("发布失败，请稍后重试"); return null; }
-    cfg = c;
-    localStorage.setItem("scheduleConfig", JSON.stringify(publicConfig(c)));
-    return r.json();
-  }).then(function(j){
-    if (j) toast("已发布，全员即时生效 ✓");
-  }).catch(function(){
-    toast("发布失败：无法连接后端");
-  });
-}
-function saveLocal(){
-  var c = collectForm();
-  if (!c) return;
-  cfg = c;
-  localStorage.setItem("scheduleConfig", JSON.stringify(publicConfig(c)));
-  toast("已保存到本机（仅当前设备生效）");
-}
-function exportJson(){
-  var c = collectForm();
-  if (!c) return;
-  cfg = c;
-  localStorage.setItem("scheduleConfig", JSON.stringify(publicConfig(c)));
-  var blob = new Blob([JSON.stringify(publicConfig(c), null, 2)], { type: "application/json" });
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "config.json";
-  a.click();
-  toast("config.json 已导出，请上传到服务器");
-}
-function resetConfig(){
-  if (!confirm("确定恢复为默认作息吗？")) return;
-  cfg = deepCopy(DEFAULT_CONFIG);
-  localStorage.removeItem("scheduleConfig");
-  fillForm();
-  refreshJson();
-  toast("已恢复默认");
-}
-
-/* ============ 文件导入 ============ */
-document.getElementById("fFile").addEventListener("change", function(){
-  var f = this.files[0];
-  this.value = "";
-  if (!f) return;
-  if (f.size > 10 * 1024 * 1024) {
-    setImportStatus("文件超过 10MB，请精简后重试", "error");
-    return;
-  }
-  var n = f.name.toLowerCase();
-  setImportStatus("正在读取「" + f.name + "」…", "loading");
-  if (n.endsWith(".csv")) {
-    var reader = new FileReader();
-    reader.onload = function(e){
-      try { parseCsvText(decodeCsvBuffer(e.target.result)); }
-      catch (err) { importFailed("CSV 解析失败：" + err.message); }
-    };
-    reader.onerror = function(){ importFailed("CSV 文件读取失败，请重新选择文件"); };
-    reader.readAsArrayBuffer(f);
-  } else if (n.endsWith(".xlsx") || n.endsWith(".xls")) {
-    loadSheetJS(function(){
-      var reader = new FileReader();
-      reader.onload = function(e){
-        try {
-          var wb = XLSX.read(new Uint8Array(e.target.result), { type: "array", cellDates: false });
-          parseWorkbook(wb);
-        } catch (err) { importFailed("Excel 解析失败：" + err.message); }
-      };
-      reader.onerror = function(){ importFailed("Excel 文件读取失败，请重新选择文件"); };
-      reader.readAsArrayBuffer(f);
-    });
-  } else importFailed("仅支持 CSV、XLSX 或 XLS 文件");
-});
-
-function setImportStatus(msg, kind){
-  var el = document.getElementById("importStatus");
-  el.textContent = msg;
-  el.className = "import-status show " + (kind || "loading");
-}
-function importFailed(msg){
-  setImportStatus(msg, "error");
-  toast(msg);
-}
-function loadSheetJS(cb){
-  if (window.XLSX) return cb();
-  if (loadSheetJS.loading) { loadSheetJS.queue.push(cb); return; }
-  loadSheetJS.loading = true;
-  loadSheetJS.queue = [cb];
-  var s = document.createElement("script");
-  var timer = setTimeout(failed, 12000);
-  function done(){
-    clearTimeout(timer);
-    loadSheetJS.loading = false;
-    var queue = loadSheetJS.queue.splice(0);
-    queue.forEach(function(fn){ fn(); });
-  }
-  function failed(){
-    clearTimeout(timer);
-    s.onerror = null;
-    loadSheetJS.loading = false;
-    loadSheetJS.queue = [];
-    importFailed("Excel 解析组件加载失败，请刷新页面后重试");
-  }
-  s.src = "/vendor/xlsx.full.min.js?v=0.18.5";
-  s.onload = function(){ window.XLSX ? done() : failed(); };
-  s.onerror = failed;
-  document.head.appendChild(s);
-}
-
-function findCol(row, aliases){
-  for (var i = 0; i < row.length; i++){
-    var h = String(row[i] || "").trim();
-    for (var j = 0; j < aliases.length; j++){
-      if (h.indexOf(aliases[j]) >= 0) return i;
-    }
-  }
-  return -1;
-}
-var AL = { name: ["名称", "时段", "name", "项目"], start: ["开始", "start"], end: ["结束", "end"],
-           type: ["类型", "type"], desc: ["说明", "desc", "备注"] };
-function mapType(t){
-  t = String(t || "").trim();
-  if (/学生入校|入校|到校|student[_ -]?entry|arrival/i.test(t)) return "student_entry";
-  if (/大课间|recess|big[_ -]?break/i.test(t)) return "recess";
-  if (/眼保健操|眼操|eye[_ -]?exercise/i.test(t)) return "eye_exercise";
-  if (/午餐|午饭|lunch/i.test(t)) return "lunch";
-  if (/卫生检查|卫生|hygiene|inspection/i.test(t)) return "hygiene";
-  if (/校园广播|广播|broadcast/i.test(t)) return "broadcast";
-  if (/午休|nap/i.test(t)) return "nap";
-  if (/社团|club/i.test(t)) return "club";
-  if (/上课|课程|lesson|class/i.test(t)) return "lesson";
-  if (/休息|break|rest/i.test(t)) return "rest";
-  if (/节点|关键|打卡|会议|key|meeting/i.test(t)) return "key";
-  return "work";
-}
-
-function normalizeImportedTime(value){
-  if (value instanceof Date && !isNaN(value.getTime())) {
-    return pad(value.getHours()) + ":" + pad(value.getMinutes());
-  }
-  if (typeof value === "number" && isFinite(value)) {
-    var fraction = ((value % 1) + 1) % 1;
-    var minutes = Math.round(fraction * 24 * 60) % (24 * 60);
-    return pad(Math.floor(minutes / 60)) + ":" + pad(minutes % 60);
-  }
-  var text = String(value == null ? "" : value).trim();
-  var normal = normalizeTime(text);
-  if (normal) return normal;
-  var cn = text.match(/^(\d{1,2})\s*[时点]\s*(\d{1,2})?\s*分?$/);
-  if (cn) return normalizeTime(cn[1] + ":" + pad(+(cn[2] || 0)));
-  if (/^\d*\.\d+$/.test(text)) return normalizeImportedTime(Number(text));
-  return "";
-}
-
-function parseRows(rows){
-  // 找出表头行
-  var hi = -1;
-  for (var i = 0; i < rows.length && i < 20; i++){
-    if (findCol(rows[i], AL.name) >= 0 && findCol(rows[i], AL.start) >= 0) { hi = i; break; }
-  }
-  if (hi < 0) { importFailed("未识别到表头（需包含：名称、开始时间）"); return; }
-  var cName = findCol(rows[hi], AL.name), cStart = findCol(rows[hi], AL.start),
-      cEnd = findCol(rows[hi], AL.end), cType = findCol(rows[hi], AL.type), cDesc = findCol(rows[hi], AL.desc);
-  var list = [], skipped = 0;
-  for (var r = hi + 1; r < rows.length; r++){
-    var row = rows[r];
-    if (!row || !row.length) continue;
-    var name = String(row[cName] == null ? "" : row[cName]).trim();
-    var start = normalizeImportedTime(row[cStart]);
-    if (!name && !start) continue;
-    if (!start) { skipped++; continue; }
-    var end = cEnd >= 0 && row[cEnd] !== "" ? normalizeImportedTime(row[cEnd]) : "";
-    var type = cType >= 0 ? mapType(row[cType]) : "work";
-    var desc = cDesc >= 0 ? String(row[cDesc] == null ? "" : row[cDesc]).trim() : "";
-    list.push({ name: name, start: start, end: end, type: type, desc: desc });
-  }
-  if (!list.length) { importFailed("未解析到有效时段，请检查名称和开始时间列"); return; }
-  applyImported(list);
-  var result = "已导入 " + list.length + " 个时段" + (skipped ? "，跳过 " + skipped + " 行时间格式错误" : "") + "。确认后请点击“保存并发布”";
-  setImportStatus(result, "success");
-  toast("导入成功：" + list.length + " 个时段");
-}
-
-function applyImported(list){
-  document.getElementById("sRows").innerHTML = "";
-  list.forEach(addRow);
-  refreshJson();
-}
-
-function applySettings(kv){
-  kv.forEach(function(it){
-    var key = String(it.k || "").trim(), val = String(it.v || "").trim();
-    if (!key) return;
-    if (key.indexOf("公司") >= 0 || key.indexOf("company") >= 0) {
-      document.getElementById("fCompany").value = val;
-    } else if (key.indexOf("温馨提示") >= 0 || key.indexOf("tips") >= 0) {
-      var ta = document.getElementById("fTips");
-      ta.value = ta.value ? ta.value + "\n" + val : val;
-    } else {
-      var wd = WEEK_NAMES.indexOf(key);
-      if (wd >= 0) cfg.workdays[wd] = /^1|是|上|y|true/i.test(val);
-    }
-  });
-  renderWdGrid();
-}
-
-function decodeCsvBuffer(buffer){
-  var bytes = new Uint8Array(buffer);
-  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes.subarray(2));
-  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes.subarray(2));
-  try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\ufeff/, ""); }
-  catch (e) {
-    try { return new TextDecoder("gb18030").decode(bytes); }
-    catch (e2) { return new TextDecoder("utf-8").decode(bytes).replace(/^\ufeff/, ""); }
-  }
-}
-function detectDelimiter(text){
-  var candidates = [",", "\t", ";", "，"], scores = [0, 0, 0, 0];
-  var lines = text.split(/\r?\n/).filter(function(line){ return line.trim(); }).slice(0, 10);
-  lines.forEach(function(line){
-    var inQ = false;
-    for (var i = 0; i < line.length; i++){
-      if (line[i] === '"') inQ = !inQ;
-      if (!inQ) candidates.forEach(function(d, idx){ if (line[i] === d) scores[idx]++; });
-    }
-  });
-  var best = 0;
-  for (var j = 1; j < scores.length; j++) if (scores[j] > scores[best]) best = j;
-  return scores[best] ? candidates[best] : ",";
-}
-function parseCsvText(text){
-  // 支持 UTF-8/GB18030、引号字段及逗号/制表符/分号分隔。
-  var delimiter = detectDelimiter(text);
-  var rows = [], cur = "", row = [], inQ = false;
-  for (var i = 0; i < text.length; i++){
-    var c = text[i];
-    if (inQ) {
-      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
-      else cur += c;
-    } else if (c === '"') inQ = true;
-    else if (c === delimiter) { row.push(cur); cur = ""; }
-    else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(cur); cur = "";
-      if (row.some(function(x){ return x.trim() !== ""; })) rows.push(row);
-      row = [];
-    } else cur += c;
-  }
-  if (cur.trim() !== "" || row.length) { row.push(cur); rows.push(row); }
-  parseRows(rows);
-}
-
-function parseWorkbook(wb){
-  var found = false;
-  Object.keys(wb.Sheets).forEach(function(sname){
-    var ws = wb.Sheets[sname];
-    var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
-    if (sname.indexOf("设置") >= 0 || sname.indexOf("settings") >= 0) {
-      var kv = rows.filter(function(r){ return r && r.length >= 2 && String(r[0]).trim() !== ""; })
-                   .map(function(r){ return { k: r[0], v: r[1] }; });
-      if (kv.length) applySettings(kv);
-      return;
-    }
-    if (!found && rows.some(function(r){ return findCol(r, AL.name) >= 0 && findCol(r, AL.start) >= 0; })) {
-      found = true;
-      parseRows(rows);
-    }
-  });
-  if (!found) toast("未在 Excel 中找到作息表（需含：名称、开始时间）");
-}
-
-/* ============ 模板下载 ============ */
-function templateRows(){
-  return [
-    ["名称", "开始时间", "结束时间", "类型", "说明"],
-    ["学生入校", "07:30", "07:50", "学生入校", "校门口值岗"],
-    ["第一节课", "08:00", "08:40", "上课", ""],
-    ["大课间", "09:30", "10:00", "大课间活动", "操场活动"],
-    ["眼保健操", "10:40", "10:45", "眼保健操时间", ""],
-    ["午餐", "11:40", "12:20", "午餐时间", ""],
-    ["午休", "12:20", "13:20", "午休时间", ""],
-    ["校园广播", "13:20", "13:30", "校园广播", ""],
-    ["卫生检查", "15:20", "", "卫生检查", ""],
-    ["社团活动", "15:30", "16:30", "社团", ""]
-  ];
-}
-function csvEsc(v){
-  v = String(v == null ? "" : v);
-  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-}
-function downloadTemplateCSV(){
-  var csv = templateRows().map(function(r){ return r.map(csvEsc).join(","); }).join("\r\n");
-  var blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "作息导入模板.csv";
-  a.click();
-  toast("CSV 模板已下载");
-}
-function downloadTemplateXLSX(){
-  loadSheetJS(function(){
-    var wb = XLSX.utils.book_new();
-    var ws = XLSX.utils.aoa_to_sheet(templateRows());
-    XLSX.utils.book_append_sheet(wb, ws, "作息表");
-    var ws2 = XLSX.utils.aoa_to_sheet([
-      ["键", "值"],
-      ["公司名称", "XX科技有限公司"],
-      ["周一", "1"], ["周二", "1"], ["周三", "1"], ["周四", "1"], ["周五", "1"],
-      ["周六", "0"], ["周日", "0"],
-      ["温馨提示", "弹性上下班：可在 08:00–09:30 之间到岗，相应顺延下班时间。"],
-      ["温馨提示", "法定节假日的安排以行政通知为准。"]
-    ]);
-    XLSX.utils.book_append_sheet(wb, ws2, "设置");
-    XLSX.writeFile(wb, "作息导入模板.xlsx");
-    toast("Excel 模板已下载");
-  });
 }
 
 /* ============ 主循环 ============ */

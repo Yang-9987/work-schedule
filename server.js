@@ -55,6 +55,15 @@ const fullReader = require('./shared/paged-read.cjs').createReader({ finish(modu
   return { previewUrl: module.route + '?localPreview=1', rowCount, sourceRowCount: rows.length, issueCount: 0 };
 } });
 setInterval(() => fullReader.sweep(), 60000).unref();
+const devSync = require('./shared/dev-sync.cjs').createSync({dir:DATA_DIR, reader:fullReader, previews:localPagePreviews,
+  loadMappings() {
+    const value=loadJson(MAPPINGS_FILE);
+    if(!mappingModel.validMappingSet(value)) throw new Error('请先保存有效的字段映射');
+    return mappingModel.upgradeMappingSet(value);
+  }
+});
+const releaseRemote = (environment, endpoint, options) => environment === 'dev'
+  ? devSync.remote(endpoint, options) : releaseClient.remote(environment, endpoint, options);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -395,12 +404,24 @@ const server = http.createServer((req, res) => {
     }
     if (p === '/api/local-console/releases/targets' && req.method === 'GET') {
       return send(res, 200, { targets: ['dev', 'main'].map(environment => {
-        let origin = ''; try { origin = releaseClient.target(environment); } catch {}
+        let origin = ''; try { origin = environment === 'dev' ? devSync.status().origin : releaseClient.target(environment); } catch {}
         return { environment, origin, writable: !!origin && (environment === 'dev' || process.env.RELEASE_MAIN_ENABLED === 'true') };
       }) });
     }
+    if (p === '/api/local-console/dev-sync/status' && req.method === 'GET') return send(res,200,devSync.status());
     if (req.method !== "POST") return send(res, 405, { ok: false, error: "method not allowed" });
     readRequestJson(req).then(async (body) => {
+      if(p.startsWith('/api/local-console/dev-sync/')) {
+        if(p.endsWith('/settings')) return send(res,200,devSync.save(body));
+        if(p.endsWith('/test')) return send(res,200,await devSync.test());
+        if(p.endsWith('/reconcile')) return send(res,200,await devSync.reconcile());
+        if(p.endsWith('/start')) {
+          if(body.confirm!=='sync:dev') throw new Error('请明确确认同步到 dev');
+          return send(res,202,devSync.start(readOwner(req),body.modules));
+        }
+        throw new Error('同步操作无效');
+      }
+      if(devSync.active()) throw new Error('dev 同步进行中，请等待完成后再修改映射或执行其他读取/发布');
       if (p.startsWith('/api/local-console/full-read/')) {
         const owner = readOwner(req);
         if (p.endsWith('/start')) {
@@ -422,12 +443,13 @@ const server = http.createServer((req, res) => {
       }
       if (p.startsWith('/api/local-console/releases/')) {
         const environment = body.environment;
-        releaseClient.target(environment);
-        if (p.endsWith('/login')) return send(res, 200, await releaseClient.remote(environment, '/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUser:body.username,adminPass:body.password})}));
+        if(environment!=='dev') releaseClient.target(environment);
+        if (p.endsWith('/login')) return send(res, 200, await releaseRemote(environment, '/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUser:body.username,adminPass:body.password})}));
         const headers = {'Content-Type':'application/json',Authorization:'Bearer ' + String(body.token || '')};
         if (!['school-calendar','work-schedule','duty-roster'].includes(body.moduleId)) throw new Error('模块无效');
-        if (p.endsWith('/history')) return send(res, 200, await releaseClient.remote(environment, '/api/releases?moduleId=' + body.moduleId + (body.cursor ? '&cursor=' + encodeURIComponent(body.cursor) : ''), {headers}));
+        if (p.endsWith('/history')) return send(res, 200, await releaseRemote(environment, '/api/releases?moduleId=' + body.moduleId + (body.cursor ? '&cursor=' + encodeURIComponent(body.cursor) : ''), {headers}));
         if (!p.endsWith('/publish') && !p.endsWith('/rollback')) throw new Error('操作无效');
+        if(environment==='dev' && devSync.status().job?.items.some(item=>item.state==='unknown')) throw new Error('上次 dev 同步结果待核对，请先使用“核对上次发布结果”，不要重复发布或回退');
         if (environment === 'main' && process.env.RELEASE_MAIN_ENABLED !== 'true') throw new Error('正式环境尚未批准开放');
         const action = p.endsWith('/publish') ? 'publish' : 'rollback';
         if (body.confirm !== environment + ':' + body.moduleId + ':' + action) throw new Error('确认信息不匹配');
@@ -437,7 +459,7 @@ const server = http.createServer((req, res) => {
           if (!module || module.id !== body.moduleId) throw new Error('模块不匹配');
           data = releaseClient.publishData(localPagePreviews.get(body.moduleId), module, readOwner(req));
         }
-        return send(res, 200, await releaseClient.remote(environment, '/api/releases', { method:'POST',headers,body:JSON.stringify({moduleId:body.moduleId,action,data,version:body.version,confirm:body.moduleId+':'+action,expectedEnvironment:environment}) }));
+        return send(res, 200, await releaseRemote(environment, '/api/releases', { method:'POST',headers,body:JSON.stringify({moduleId:body.moduleId,action,data,version:body.version,confirm:body.moduleId+':'+action,expectedEnvironment:environment}) }));
       }
       if (p === "/api/local-console/discover") {
         return send(res, 200, { ok: true, document: wecomBridge.listSheets(body.documentUrl) });
@@ -498,6 +520,15 @@ const server = http.createServer((req, res) => {
 
   // ===================== 静态文件 =====================
   if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }
+  // 管理界面仅由本地工作台提供；旧书签在本地转到工作台。
+  if (p === "/admin" || p.startsWith("/admin/")) {
+    if (LOCAL_CONSOLE_MODE) { res.writeHead(302, { Location: "/local-console/" }); res.end(); }
+    else { res.writeHead(404); res.end(); }
+    return;
+  }
+  if (!LOCAL_CONSOLE_MODE && (p === "/local-console" || p.startsWith("/local-console/"))) {
+    res.writeHead(404); res.end(); return;
+  }
   const routeFiles = {
     "/": "/index.html",
     "/work-schedule": "/modules/work-schedule/index.html",
@@ -506,10 +537,6 @@ const server = http.createServer((req, res) => {
     "/school-calendar/": "/modules/school-calendar/index.html",
     "/duty-roster": "/modules/duty-roster/index.html",
     "/duty-roster/": "/modules/duty-roster/index.html",
-    "/admin/mappings": "/admin/mappings/index.html",
-    "/admin/mappings/": "/admin/mappings/index.html",
-    "/admin/calendar/": "/modules/school-calendar/index.html",
-    "/admin/calendar": "/modules/school-calendar/index.html",
     "/local-console": "/local-console/index.html",
     "/local-console/": "/local-console/index.html"
   };

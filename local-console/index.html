@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#173f5f">
   <title>本地工作台 · 校园工作台</title>
-  <link rel="stylesheet" href="/assets/css/local-console.css?v=3">
+  <link rel="stylesheet" href="/assets/css/local-console.css?v=5">
 </head>
 <body>
+  <a class="skip-link" href="#workspace">跳到工作区</a>
   <section class="local-login" id="loginScreen">
     <form class="local-login-card" id="loginForm">
       <a href="/">校园工作台</a>
@@ -32,7 +33,7 @@
 
   <main class="console-main">
     <section class="page-title">
-      <div><h1>本地工作台</h1><p>读取企业微信智能表格，检查字段并生成网页数据映射。</p></div>
+      <div><h1>本地工作台</h1><p>配置表格、检查网页、同步数据。</p></div>
       <button class="button secondary" id="refreshStatus" type="button">重新检查连接</button>
     </section>
 
@@ -43,7 +44,40 @@
       <div><span>映射配置</span><strong id="mappingUpdate">尚未读取</strong></div>
     </section>
 
-    <section class="console-grid">
+    <section class="panel sync-panel" aria-label="同步到测试环境">
+      <div class="sync-heading"><h2>同步数据</h2><span class="environment-label">dev · 测试环境</span></div>
+      <p>使用已保存的字段映射，完整读取、核对后更新测试网站。不会发布到 main。请暂勿编辑源表。</p>
+      <div class="sync-modules">
+        <label><input type="checkbox" name="syncModule" value="school-calendar" checked>校历</label>
+        <label><input type="checkbox" name="syncModule" value="work-schedule" checked>作息</label>
+        <label><input type="checkbox" name="syncModule" value="duty-roster" checked>值班</label>
+      </div>
+      <div class="sync-actions">
+        <button type="button" class="button primary" id="syncStart">一键同步到 dev</button>
+        <button type="button" class="button secondary" id="syncReconcile">核对上次发布结果</button>
+        <button type="button" class="button secondary" id="syncRefresh">刷新进度</button>
+      </div>
+      <p id="syncStatus" role="status" aria-live="polite">展开设置，完成首次连接配置。</p>
+      <ul id="syncResults"></ul>
+      <details id="syncSettings">
+        <summary>dev 同步设置（首次配置）</summary>
+        <form id="syncSettingsForm">
+          <label class="form-wide">测试地址<input id="syncOrigin" type="url" readonly></label>
+          <label>本机 HTTP 代理（留空表示直连）<input id="syncProxy" type="url" placeholder="http://127.0.0.1:7897"></label>
+          <label>dev 管理员账号<input id="syncUser" autocomplete="username" value="admin"></label>
+          <label>dev 管理员密码<input id="syncPassword" type="password" autocomplete="new-password" placeholder="留空保留已保存的密码"></label>
+          <label>Vercel 自动化访问 Secret<input id="syncBypass" type="password" autocomplete="new-password" placeholder="留空保留已保存的 Secret"></label>
+          <p class="form-wide credentials-note">凭据仅保存到本机权限为 600 的配置文件，不上传 Git、不回显。该文件未加密，本机当前用户可读取；请勿共享电脑账号或备份此文件到公共位置。Vercel Secret 仅发送到上方固定 dev 地址。</p>
+          <label class="check-label form-wide"><input id="syncConsent" type="checkbox">允许将本次填写的凭据保存在本机，用于以后的一键同步</label>
+          <label class="check-label"><input id="syncClearPassword" type="checkbox">清除已保存的管理员密码</label>
+          <label class="check-label"><input id="syncClearBypass" type="checkbox">清除已保存的 Vercel Secret</label>
+          <p class="form-wide" id="syncSaved"></p>
+          <div class="sync-actions form-wide"><button class="button secondary" type="submit" id="syncSave">保存本机配置</button><button class="button secondary" type="button" id="syncTest">验证连接（不发布）</button></div>
+        </form>
+      </details>
+    </section>
+
+    <section class="console-grid" id="workspace" tabindex="-1" aria-label="表格映射工作区">
       <aside class="module-panel panel">
         <div class="panel-head"><h2>网页模块</h2><span id="moduleTotal">0 个</span></div>
         <nav id="moduleList" aria-label="网页模块"></nav>
@@ -90,7 +124,7 @@
 
       <aside class="preview-panel panel">
         <div class="panel-head"><h2>数据预览</h2><span id="previewCount">0 行</span></div>
-        <div class="preview-wrap" id="previewTable"><p class="empty">完成字段映射后，读取少量样例数据进行检查。</p></div>
+        <div class="preview-wrap" id="previewTable" tabindex="0" role="region" aria-label="样例数据，可横向滚动"><p class="empty">完成字段映射后，读取少量样例数据进行检查。</p></div>
         <div class="notice"><strong>本地处理</strong><p>企业微信授权和读取操作都在当前电脑完成。页面不会显示或上传企业微信内部标识。</p></div>
       </aside>
     </section>
@@ -106,8 +140,8 @@
   </section>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <dialog id="releaseDialog" class="release-dialog">
-    <h2>数据发布与版本</h2>
+  <dialog id="releaseDialog" class="release-dialog" aria-labelledby="releaseTitle">
+    <h2 id="releaseTitle">数据发布与版本</h2>
     <p id="releaseModule"></p>
     <label>目标环境<select id="releaseEnvironment"><option value="dev">dev · 测试环境</option><option value="main">main · 正式环境</option></select></label>
     <p id="releaseTarget"></p>
@@ -121,7 +155,8 @@
     <p id="releaseStatus" role="status"></p>
     <button id="releaseClose" type="button">关闭</button>
   </dialog>
-  <script src="/assets/js/local-console.js?v=9" defer></script>
+  <script src="/assets/js/local-console.js?v=11" defer></script>
   <script src="/assets/js/local-releases.js?v=1" defer></script>
+  <script src="/assets/js/local-sync.js?v=1" defer></script>
 </body>
 </html>

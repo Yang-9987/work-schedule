@@ -8,6 +8,7 @@ import { validDuty } from '../api/_lib/duty-store.mjs';
 import { GET as calendarRead, POST as calendarWrite } from '../api/calendar.mjs';
 import { POST as dutyWrite } from '../api/duty-roster.mjs';
 import { GET as dutyRead } from '../api/duty-roster.mjs';
+import { GET as scheduleRead } from '../api/config.mjs';
 import { GET as historyRead, POST as releaseWrite } from '../api/releases.mjs';
 
 test('Blob accepts runtime OIDC without weakening production write gates', () => {
@@ -30,6 +31,23 @@ test('homepage exposes all three deployed modules without development placeholde
   }
   assert(html.includes('3 个功能'));
   assert(!/开发中|建设中|查看进度|module-card--developing/.test(html));
+});
+
+test('display pages contain no administration UI or cloud administration routes', () => {
+  for (const file of ['index.html', 'modules/work-schedule/index.html', 'modules/school-calendar/index.html', 'modules/duty-roster/index.html']) {
+    const html = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    assert(!/管理后台|管理员|管理入口|管理端|\/admin\/|type=["']password["']/.test(html), file);
+    assert(/name="viewport"/.test(html), file + ' requires responsive viewport');
+  }
+  for (const file of ['assets/js/calendar.js', 'assets/js/duty-roster.js']) {
+    const script = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    assert(!/calendarAdminToken|adminEntry|\/api\/auth|\/admin\//.test(script), file);
+  }
+  const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  assert(![...config.rewrites, ...config.redirects].some(route => route.source.startsWith('/admin')));
+  const ignored = readFileSync(new URL('../.vercelignore', import.meta.url), 'utf8').split('\n');
+  assert(ignored.includes('admin/'));
+  assert(ignored.includes('local-console/'));
 });
 
 function memoryStore() {
@@ -116,5 +134,6 @@ test('anonymous reads do not request admin login', async () => {
   try {
     assert.equal((await calendarRead(new Request('https://test.invalid/api/calendar'))).status, 200);
     assert.equal((await dutyRead(new Request('https://test.invalid/api/duty-roster'))).status, 404);
+    assert.equal((await scheduleRead(new Request('https://test.invalid/api/config'))).status, 404);
   } finally { if (token !== undefined) process.env.BLOB_READ_WRITE_TOKEN=token; }
 });

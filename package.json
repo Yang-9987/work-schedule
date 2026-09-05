@@ -8,13 +8,14 @@
     "start:console": "LOCAL_CONSOLE_MODE=1 PORT=3100 node server.js",
     "sync:calendar": "node scripts/sync-wecom-calendar.mjs",
     "check": "node --check server.js && node --check shared/module-mapping-model.cjs && node --check shared/local-console-auth.cjs && node --check shared/wecom-bridge.cjs && node --check shared/preview-model.cjs && node --check api/health.mjs && node --check api/auth.mjs && node --check api/config.mjs && node --check api/schedule.mjs && node --check api/calendar.mjs && node --check api/calendar-sync.mjs && node --check api/module-mappings.mjs && node --check api/_lib/calendar-store.mjs && node --check api/_lib/mapping-store.mjs && node --check scripts/sync-wecom-calendar.mjs && node --check assets/js/app-shell.js && node --check assets/js/calendar.js && node --check assets/js/duty-roster.js && node --check assets/js/mapping-admin.js && node --check assets/js/local-console.js && node --check assets/js/calendar-text.js && node --check api/_lib/versioned-store.mjs && node --check api/_lib/duty-store.mjs && node --check api/duty-roster.mjs && node --check api/releases.mjs",
-    "test": "node scripts/test-calendar-text.cjs && node scripts/test-duty-preview.cjs && node scripts/test-release-client.cjs && node --test scripts/release-readiness.test.mjs scripts/paged-read.test.cjs"
+    "test": "node scripts/test-calendar-text.cjs && node scripts/test-duty-preview.cjs && node scripts/test-release-client.cjs && node --test scripts/release-readiness.test.mjs scripts/paged-read.test.cjs scripts/dev-sync.test.cjs scripts/public-routes.test.cjs scripts/local-mapping.test.cjs"
   },
   "engines": {
     "node": "22.x"
   },
   "dependencies": {
     "@vercel/blob": "^2.3.0",
+    "undici": "^6.28.0",
     "xlsx": "^0.18.5"
   }
 }

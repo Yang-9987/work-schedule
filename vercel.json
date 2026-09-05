@@ -16,16 +16,9 @@
       "source": "/duty-roster",
       "destination": "/duty-roster/",
       "permanent": true
-    },
-    {
-      "source": "/admin/mappings",
-      "destination": "/admin/mappings/",
-      "permanent": true
     }
   ],
   "rewrites": [
-    { "source": "/admin/calendar/", "destination": "/modules/school-calendar/index.html" },
-    { "source": "/admin/calendar", "destination": "/modules/school-calendar/index.html" },
     {
       "source": "/work-schedule/",
       "destination": "/modules/work-schedule/index.html"
@@ -41,10 +34,6 @@
     {
       "source": "/duty-roster/",
       "destination": "/modules/duty-roster/index.html"
-    },
-    {
-      "source": "/admin/mappings/",
-      "destination": "/admin/mappings/index.html"
     }
   ],
   "headers": [

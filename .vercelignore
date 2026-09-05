@@ -2,10 +2,15 @@ server.js
 data/
 部署说明.md
 local-console/
+admin/
+assets/css/mapping-admin.css
+assets/js/mapping-admin.js
 assets/css/local-console.css
 assets/js/local-console.js
 assets/js/local-releases.js
 shared/release-client.cjs
+shared/dev-sync.cjs
+assets/js/local-sync.js
 shared/wecom-bridge.cjs
 shared/paged-read.cjs
 shared/local-console-auth.cjs
