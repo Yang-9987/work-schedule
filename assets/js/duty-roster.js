@@ -44,7 +44,7 @@
     el("todayDuty").hidden = false;
     var html = '<div class="hero-head"><h2 class="hero-label">今日值班</h2><span class="hero-date">' + safe(today.getFullYear() + "年" + fmt(s)) + '</span></div><div class="hero-body">';
     if (!list.length) {
-      html += '<div class="hero-empty"><div class="big">今日暂无值班安排</div><p>没有排班记录，不代表已确认放假。</p></div>';
+      html += '<div class="hero-empty"><div class="big">今日暂无值班安排</div></div>';
       var next = rows.find(function (row) { return row.date > s && row.type !== "holiday" && names(row).length; });
       if (next) html += '<div class="hero-tip">下次值班：' + safe(fmt(next.date) + " · " + names(next).join("、")) + '</div>';
     } else list.forEach(function (row) {
