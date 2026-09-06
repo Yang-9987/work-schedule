@@ -111,8 +111,7 @@ function ensureSheet(documentUrl, sheetTitle) {
   return document;
 }
 
-function listFields(documentUrl, sheetTitle) {
-  ensureSheet(documentUrl, sheetTitle);
+function fetchFields(documentUrl, sheetTitle) {
   const parsed = parseDocumentUrl(documentUrl);
   const payload = cliJson([
     "smartsheet", "fields", "list", "--json",
@@ -122,6 +121,35 @@ function listFields(documentUrl, sheetTitle) {
     const type = typeName(field.field_type);
     return { name: String(field.field_title || ""), type: type.type, typeLabel: type.label };
   }).filter((field) => field.name);
+}
+
+function listFields(documentUrl, sheetTitle) {
+  ensureSheet(documentUrl, sheetTitle);
+  return fetchFields(documentUrl, sheetTitle);
+}
+
+function resolveModuleSheet(module) {
+  const document = listSheets(module.source.documentUrl);
+  if (document.sheets.some((sheet) => sheet.title === module.source.sheet)) {
+    return { module, changed: false };
+  }
+  const selected = [...new Set(module.mappings.map((mapping) => mapping.source))];
+  const candidates = [];
+  for (const sheet of document.sheets) {
+    if (sheet.fieldCount && sheet.fieldCount < selected.length) continue;
+    const fields = fetchFields(module.source.documentUrl, sheet.title);
+    const names = new Set(fields.map((field) => field.name));
+    if (selected.every((name) => names.has(name))) candidates.push({ sheet, fields });
+  }
+  if (candidates.length !== 1) {
+    throw bridgeError(candidates.length
+      ? "找到多个字段相符的子表，请在字段映射中重新选择"
+      : "未找到字段相符的子表，请在字段映射中重新选择", "SHEET_NOT_FOUND");
+  }
+  const resolved = JSON.parse(JSON.stringify(module));
+  resolved.source.sheet = candidates[0].sheet.title;
+  resolved.source.fields = candidates[0].fields;
+  return { module: resolved, changed: true };
 }
 
 function readableValue(value) {
@@ -205,4 +233,4 @@ function readPage(module, cursor, limit) {
   });
 }
 
-module.exports = { inspectRead, readPage, assertSafeRows, listFields, listPreviewRows, listSampleRows, listSheets, parseDocumentUrl, readableValue, status, versionAtLeast };
+module.exports = { inspectRead, readPage, assertSafeRows, listFields, listPreviewRows, listSampleRows, listSheets, parseDocumentUrl, readableValue, resolveModuleSheet, status, versionAtLeast };

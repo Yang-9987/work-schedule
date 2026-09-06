@@ -60,6 +60,11 @@ const devSync = require('./shared/dev-sync.cjs').createSync({dir:DATA_DIR, reade
     const value=loadJson(MAPPINGS_FILE);
     if(!mappingModel.validMappingSet(value)) throw new Error('请先保存有效的字段映射');
     return mappingModel.upgradeMappingSet(value);
+  },
+  resolveModule: wecomBridge.resolveModuleSheet,
+  saveMappings(value) {
+    if(!mappingModel.validMappingSet(value)) throw new Error('自动修复后的映射无效，已停止同步');
+    saveJson(MAPPINGS_FILE,value);
   }
 });
 const releaseRemote = (environment, endpoint, options) => environment === 'dev'

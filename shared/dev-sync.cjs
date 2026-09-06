@@ -19,13 +19,18 @@ function canonical(value) {
   return value;
 }
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
-function createSync({dir, reader, previews, loadMappings, request, schedule = setImmediate}) {
+function createSync({dir, reader, previews, loadMappings, saveMappings, resolveModule, request, schedule = setImmediate}) {
   const configFile = path.join(dir,'dev-sync-config.json'), journalFile = path.join(dir,'dev-sync-state.json');
   let job = read(journalFile), running = false;
   if(job?.running) {
     job.running = false;
-    for(const item of job.items) if(!['success','failed','pending'].includes(item.state)) {
-      item.state = item.hash ? 'unknown' : 'failed'; item.message = item.hash ? '服务重启，请核对目标数据' : '服务重启，尚未发送发布';
+    for(const item of job.items) if(!['success','failed'].includes(item.state)) {
+      item.state = item.hash ? 'unknown' : 'failed'; item.message = item.hash ? '服务重启，请核对目标数据' : '服务重启，尚未发送发布，可重新同步';
+    }
+    write(journalFile,job);
+  } else if(job?.items?.some(item=>item.state==='pending')) {
+    for(const item of job.items) if(item.state==='pending') {
+      item.state='failed'; item.message='上次任务中断前尚未执行，可重新同步';
     }
     write(journalFile,job);
   }
@@ -109,10 +114,24 @@ function createSync({dir, reader, previews, loadMappings, request, schedule = se
         const check=await remote('/api/releases?moduleId='+modules[0].id,{headers:{Authorization:'Bearer '+token}},c);
         if(!Array.isArray(check.versions)) throw new Error('目标发布接口尚未就绪');
         for(let n=0;n<modules.length;n++) {
-          const module=modules[n], item=job.items[n];
+          let module=modules[n]; const item=job.items[n];
           try {
             item.state='reading'; item.message='正在完整读取并双遍核对'; persist();
-            const task=reader.start(owner,module); let current=task;
+            let task;
+            try { task=reader.start(owner,module); }
+            catch(error) {
+              if(error.code!=='SHEET_NOT_FOUND' || !resolveModule || !saveMappings) throw error;
+              const resolved=resolveModule(module);
+              if(!resolved?.changed) throw error;
+              const fresh=loadMappings();
+              const stored=fresh.modules.find(candidate=>candidate.id===module.id);
+              if(client.fingerprint(stored)!==client.fingerprint(module)) throw new Error('映射发生变化，已停止自动修复');
+              fresh.modules=fresh.modules.map(candidate=>candidate.id===module.id ? resolved.module : candidate);
+              saveMappings(fresh); module=resolved.module; modules[n]=module;
+              item.message='已自动匹配当前子表，正在完整读取并双遍核对'; persist();
+              task=reader.start(owner,module);
+            }
+            let current=task;
             while(['reading','verifying'].includes(current.state)) {
               current=await reader.next(owner,task.task,current.sequence);
               item.message=(current.pass===2?'复核':'读取')+' '+current.readCount+' / '+current.total+' 行'; persist();
@@ -127,9 +146,18 @@ function createSync({dir, reader, previews, loadMappings, request, schedule = se
             await remote('/api/releases',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({moduleId:module.id,action:'publish',data,confirm:module.id+':publish',expectedEnvironment:'dev'})},c);
             await verify(item,c);
           } catch(e) {
-            if(item.state!=='unknown') item.state='failed';
-            item.message=e.message; persist();
-            if(item.state==='unknown') break;
+            if(item.state==='unknown') {
+              // A failed response does not prove that the write failed. Reconcile
+              // with a read-only request so a lost response can still complete
+              // the one-click job without issuing the write a second time.
+              try { await verify(item,c); }
+              catch(verifyError) {
+                item.message=e.message+'；自动核对未确认：'+verifyError.message; persist();
+                break;
+              }
+            } else {
+              item.state='failed'; item.message=e.message; persist();
+            }
           }
         }
       } catch(e) { for(const item of job.items) if(item.state==='pending') {item.state='failed';item.message=e.message;} }

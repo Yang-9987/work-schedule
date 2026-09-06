@@ -5,7 +5,7 @@ const os=require('node:os');
 const path=require('node:path');
 const {createSync,ORIGIN,hash}=require('../shared/dev-sync.cjs');
 const client=require('../shared/release-client.cjs');
-function fixture(t,{failure=false,readFailure=false}={}) {
+function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,missingFirstSheet=false}={}) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'school-dev-sync-test-'));
   t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
   const ids=['school-calendar','work-schedule','duty-roster'];
@@ -16,15 +16,24 @@ function fixture(t,{failure=false,readFailure=false}={}) {
     if(route==='/api/auth') return Response.json({ok:true,token:'synthetic-admin-token'});
     if(route==='/api/releases' && !options.method) return Response.json({versions:[]});
     if(route==='/api/releases') {
-      const body=JSON.parse(options.body);assert.equal(body.expectedEnvironment,'dev');written[body.moduleId]=body.data;
+      const body=JSON.parse(options.body);assert.equal(body.expectedEnvironment,'dev');
+      if(failureBeforeWrite) throw new Error('fetch failed');
+      written[body.moduleId]=body.data;
       if(failure) throw new Error('fetch failed');
       return Response.json({ok:true});
     }
     const id={'/api/calendar':'school-calendar','/api/config':'work-schedule','/api/duty-roster':'duty-roster'}[route];
     return Response.json(id==='duty-roster'?{data:written[id]}:written[id]);
   };
-  const deps={dir,previews,loadMappings:()=>({modules}),request,schedule:fn=>{run=fn;},reader:{
-    start(owner,m){taskModule=m;return {task:m.id,state:'reading',sequence:0};},
+  const deps={dir,previews,loadMappings:()=>({modules}),saveMappings:set=>{modules.splice(0,modules.length,...set.modules);},
+    resolveModule:m=>({changed:true,module:{...m,source:{...m.source,sheet:'recovered-sheet'}}}),
+    request,schedule:fn=>{run=fn;},reader:{
+    start(owner,m){
+      if(missingFirstSheet && m.id==='school-calendar' && m.source.sheet!=='recovered-sheet') {
+        const error=new Error('missing sheet');error.code='SHEET_NOT_FOUND';throw error;
+      }
+      taskModule=m;return {task:m.id,state:'reading',sequence:0};
+    },
     async next(owner){
       if(readFailure) return {state:'failed',error:'synthetic read failed'};
       previews.set(taskModule.id,{mappingFingerprint:client.fingerprint(taskModule),sourceRowCount:2,complete:true,verifiedPasses:2,owner,issues:[],rowCount:2,data:{sample:taskModule.id}});
@@ -56,14 +65,18 @@ test('one click processes all modules, verifies each, locks concurrent start',as
   assert(f.calls.every(c=>c.url.startsWith(ORIGIN+'/api/')&&c.options.redirect==='manual'));
   assert(f.calls.every(c=>c.options.headers.get('x-vercel-protection-bypass')==='synthetic-bypass'));
 });
-test('lost publish response blocks retry and only read-only reconciliation clears it',async t=>{
+test('lost publish response is reconciled read-only and one click continues',async t=>{
   const f=fixture(t,{failure:true});f.sync.start('owner',f.ids);await f.run();
+  assert(f.sync.status().job.items.every(item=>item.state==='success'));
+  assert.equal(f.calls.filter(c=>c.url.endsWith('/api/releases')&&c.options.method==='POST').length,3);
+});
+test('an unconfirmed write is never retried automatically',async t=>{
+  const f=fixture(t,{failureBeforeWrite:true});f.sync.start('owner',f.ids);await f.run();
   assert.equal(f.sync.status().job.items[0].state,'unknown');
   assert.equal(f.sync.status().job.items[1].state,'pending');
   assert.throws(()=>f.sync.start('owner',f.ids));
-  const resumed=createSync(f.deps);assert.throws(()=>resumed.start('owner',f.ids));
-  const before=f.calls.length;await resumed.reconcile();
-  assert.equal(resumed.status().job.items[0].state,'success');
+  const before=f.calls.length;await f.sync.reconcile();
+  assert.equal(f.sync.status().job.items[0].state,'unknown');
   assert(f.calls.slice(before).every(c=>!c.options.method));
 });
 test('read failures never publish and do not claim success',async t=>{
@@ -82,4 +95,17 @@ test('redirects never forward credentials and fail with actionable error',async 
   const f=fixture(t);
   const s=createSync({...f.deps,request:async()=>new Response(null,{status:302,headers:{location:'https://elsewhere.example'}})});
   await assert.rejects(s.test(),/Vercel/);
+});
+test('one click repairs one unambiguous renamed sheet and continues all modules',async t=>{
+  const f=fixture(t,{missingFirstSheet:true});f.sync.start('owner',f.ids);await f.run();
+  assert(f.sync.status().job.items.every(item=>item.state==='success'));
+  assert.equal(f.deps.loadMappings().modules[0].source.sheet,'recovered-sheet');
+  assert.equal(Object.keys(f.written).length,3);
+});
+test('interrupted pending items become retryable failures after restart',t=>{
+  const f=fixture(t);const file=path.join(f.dir,'dev-sync-state.json');
+  fs.writeFileSync(file,JSON.stringify({running:false,items:[{id:'duty-roster',state:'pending',message:'等待同步'}]}));
+  const resumed=createSync(f.deps);
+  assert.equal(resumed.status().job.items[0].state,'failed');
+  assert.match(resumed.status().job.items[0].message,/重新同步|可重新同步/);
 });
