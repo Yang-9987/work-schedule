@@ -39,6 +39,7 @@ for (const local of [false, true]) {
       const result = await get(route);
       assert.equal(result.status, 200, route);
       assert(!/管理员|管理后台|管理入口/.test(result.body), route);
+      if (route !== '/') assert(!/class=["']module-nav/.test(result.body), route);
     }
     for (const route of ['/admin/mappings/', '/admin/mappings/index.html', '/admin/calendar/']) {
       const result = await get(route);
