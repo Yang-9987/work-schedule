@@ -35,7 +35,7 @@
     el('syncSaved').textContent='管理员密码：'+(data.hasPassword?'已保存':'未保存')+'；Vercel Secret：'+(data.hasBypass?'已保存':'未保存');
     controls(data.running);
     el('syncResults').replaceChildren();
-    var labels={pending:'未执行',reading:'读取中',failed:'失败（未发送发布）',unknown:'结果待核对',success:'成功'};
+    var labels={pending:'未执行',reading:'读取中',failed:'未完成',unknown:'结果待核对',success:'成功'};
     ((data.job||{}).items||[]).forEach(function(item){var li=document.createElement('li');li.textContent=item.name+' · '+labels[item.state]+' · '+item.message+(item.count?'（'+item.count+' 条）':'');el('syncResults').append(li);});
     clearTimeout(timer);
     if(data.running) {el('syncStatus').textContent='正在同步，关闭或刷新页面不会重复发布。';timer=setTimeout(refresh,1500);}

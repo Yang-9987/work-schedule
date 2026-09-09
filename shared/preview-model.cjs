@@ -1,3 +1,4 @@
+const { dataIssues } = require("./data-validation.cjs");
 const calendarText = require("../assets/js/calendar-text.js");
 const CALENDAR_TYPES = {
   teaching: "teaching", "教学": "teaching", "教学安排": "teaching",
@@ -93,6 +94,8 @@ function normalizedRecords(module, rows) {
   const issues = [];
   const required = new Set(module.schema.fields.filter((field) => field.required).map((field) => field.key));
   const records = rows.map((row, rowIndex) => {
+    // Ignore genuinely empty source rows before type defaults create phantom records.
+    if (module.mappings.every(mapping => !text(row[mapping.source]))) return null;
     const record = {};
     for (const mapping of module.mappings) record[mapping.target] = transform(row[mapping.source], mapping, module.id);
     const values = Object.values(record).map(text);
@@ -105,7 +108,7 @@ function normalizedRecords(module, rows) {
   return { records: sortRecords(records, module.view.sort), issues: issues.slice(0, 20) };
 }
 
-function pageData(module, rows) {
+function buildPageData(module, rows) {
   const normalized = normalizedRecords(module, rows);
   if (module.id === "school-calendar") {
     return {
@@ -129,7 +132,7 @@ function pageData(module, rows) {
         company: "首师附一小",
         schedule: normalized.records,
         workdays: [false, true, true, true, true, true, false],
-        tips: ["当前为本地预览，内容尚未同步到线上。"]
+        tips: []
       },
       issues: normalized.issues
     };
@@ -155,4 +158,9 @@ function pageData(module, rows) {
   };
 }
 
+function pageData(module, rows) {
+  const result = buildPageData(module, rows);
+  result.issues = [...new Set([...result.issues, ...dataIssues(module.id, result.data)])].slice(0, 20);
+  return result;
+}
 module.exports = { dateValue, pageData, text, timeValue };

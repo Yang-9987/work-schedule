@@ -167,3 +167,73 @@ test('anonymous reads do not request admin login', async () => {
     assert.equal((await scheduleRead(new Request('https://test.invalid/api/config'))).status, 404);
   } finally { if (token !== undefined) process.env.BLOB_READ_WRITE_TOKEN=token; }
 });
+
+test('preview and publishing use the same validation, with useful row errors', async () => {
+  const { default: preview } = await import('../shared/preview-model.cjs');
+  const { default: mapping } = await import('../shared/module-mapping-model.cjs');
+  const { validConfig, validCalendar } = await import('../shared/data-validation.cjs');
+  const modules = mapping.cloneSeed().modules;
+  const schedule = modules.find(m => m.id === 'work-schedule');
+  const good = preview.pageData(schedule, [{名称:'上课',开始时间:'8:20',类型:'上课'}, {}]);
+  assert.equal(good.data.schedule.length, 1);
+  assert.equal(good.issues.length, 0);
+  assert(validConfig(good.data));
+  assert.deepEqual(good.data.tips, []);
+  const bad = preview.pageData(schedule, [{名称:'上课',开始时间:'25:00',类型:'上课'}]);
+  assert(!validConfig(bad.data));
+  assert.match(bad.issues.join(), /第 1 条/);
+  const calendar = modules.find(m => m.id === 'school-calendar');
+  for (const row of [{日期:'2026-02-30',事件:'活动'}, {日期:'2026-09-01',事件:'字'.repeat(5001)}]) {
+    const built = preview.pageData(calendar, [row]);
+    assert(!validCalendar(built.data));
+    assert(built.issues.length > 0);
+  }
+});
+
+test('write errors distinguish backup rejection, conflict and uncertain response', async () => {
+  const {store, io} = memoryStore();
+  await store.write('school-calendar', {revision:1});
+  const put = io.put;
+  io.put = async () => { throw new Error('secret storage details'); };
+  await assert.rejects(store.write('school-calendar', {revision:2}), e => e.code === 'BACKUP_FAILED' && e.writeStarted === false && !e.message.includes('secret'));
+  io.put = async (path, ...args) => {
+    if(path.includes('/history/')) return put(path,...args);
+    throw Object.assign(new Error('conflict'), {name:'BlobPreconditionFailedError'});
+  };
+  await assert.rejects(store.write('school-calendar', {revision:2}), e => e.code === 'VERSION_CONFLICT' && e.status === 409 && e.writeStarted === false);
+  io.put = async (path, ...args) => {
+    if(path.includes('/history/')) return put(path,...args);
+    throw new Error('connection reset');
+  };
+  await assert.rejects(store.write('school-calendar', {revision:2}), e => e.code === 'WRITE_UNCONFIRMED' && e.writeStarted === true);
+});
+
+test('successful publish remains successful when history refresh fails', async () => {
+  const vm = await import('node:vm');
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, {value:'',textContent:'',addEventListener(){},replaceChildren(){},showModal(){},close(){}});
+    return elements.get(id);
+  };
+  const events = {};
+  let writes = 0;
+  const context = vm.createContext({
+    document:{getElementById:element}, window:{addEventListener:(name,fn)=>events[name]=fn},
+    sessionStorage:{getItem:()=> 'local-token'}, confirm:()=>true,
+    fetch:async(url)=> {
+      if(url.endsWith('/targets')) return Response.json({targets:[{environment:'dev',origin:'https://test.invalid',writable:true}]});
+      if(url.endsWith('/login')) return Response.json({token:'remote-token'});
+      if(url.endsWith('/publish')) { writes++; return Response.json({ok:true,backupVersion:'test'}); }
+      return Response.json({error:'history unavailable'},{status:503});
+    }
+  });
+  vm.runInContext(readFileSync(new URL('../assets/js/local-releases.js',import.meta.url),'utf8'),context);
+  const settle = () => new Promise(resolve=>setImmediate(resolve));
+  events['open-release']({detail:{id:'work-schedule',name:'作息'}}); await settle();
+  element('releaseLogin').onclick(); await settle();
+  element('releasePublish').onclick(); await settle();
+  assert.equal(writes,1);
+  assert.match(element('releaseStatus').textContent,/数据发布成功/);
+  assert.match(element('releaseStatus').textContent,/历史版本加载失败/);
+  assert.match(element('releaseStatus').textContent,/请勿重复发布/);
+});

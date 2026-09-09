@@ -47,7 +47,7 @@ const fullReader = require('./shared/paged-read.cjs').createReader({ finish(modu
   if (module.id === 'school-calendar' && rowCount > 500) throw new Error('校历解析后超过 500 条事件的当前发布容量，请缩小源表范围');
   if (module.id === 'duty-roster' && rowCount > 2000) throw new Error('值周数据超过 2000 条的当前发布容量');
   if (Buffer.byteLength(JSON.stringify(built.data)) > 900 * 1024) throw new Error('解析数据超过发布大小上限，请缩小源表范围');
-  if (built.issues.length || !rowCount) throw new Error('完整数据存在解析问题或为空，请检查样例和字段映射');
+  if (built.issues.length || !rowCount) throw new Error(built.issues.length ? built.issues.join('；') : '完整数据为空，不能发布');
   const preview = { ...proof, moduleId: module.id, moduleName: module.name, route: module.route,
     mappingFingerprint: releaseClient.fingerprint(module), generatedAt: new Date().toISOString(),
     rowCount, issues: built.issues, data: built.data };
