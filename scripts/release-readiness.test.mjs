@@ -237,3 +237,60 @@ test('successful publish remains successful when history refresh fails', async (
   assert.match(element('releaseStatus').textContent,/历史版本加载失败/);
   assert.match(element('releaseStatus').textContent,/请勿重复发布/);
 });
+
+test('compressed weak GET ETags use verified strong metadata for publish and rollback', async () => {
+  const {store, io, records} = memoryStore();
+  await store.write('work-schedule', {revision:1});
+  const get = io.get, put = io.put;
+  let headReads = 0;
+  io.get = async path => {
+    const result = await get(path);
+    if (result) result.blob.etag = 'W/' + result.blob.etag;
+    return result;
+  };
+  io.head = async path => { headReads++; return {etag:records.get(path)?.etag}; };
+  io.put = async (path, body, opts) => {
+    assert(!opts.ifMatch?.startsWith('W/'), 'never submit weak ETag to Blob writes');
+    return put(path, body, opts);
+  };
+  const {backupVersion} = await store.write('work-schedule', {revision:2});
+  assert.deepEqual(await store.read('work-schedule'), {revision:2});
+  assert.equal(headReads, 1, 'public reads do not need metadata requests');
+  await store.rollback('work-schedule', backupVersion, data=>Number.isInteger(data.revision));
+  assert.deepEqual(await store.read('work-schedule'), {revision:1});
+  assert.equal(headReads, 2);
+});
+
+test('metadata changing after a weak GET prevents backup and overwrite', async () => {
+  const {store, io, records} = memoryStore();
+  await store.write('work-schedule', {revision:1});
+  const get = io.get;
+  io.get = async path => { const result = await get(path); result.blob.etag = 'W/' + result.blob.etag; return result; };
+  io.head = async path => {
+    records.set(path, {body:'{"revision":99}',etag:'external'});
+    return {etag:'external'};
+  };
+  await assert.rejects(store.write('work-schedule', {revision:2}), error => error.code === 'VERSION_CONFLICT' && error.writeStarted === false);
+  assert.equal(records.size, 1);
+  assert.equal(JSON.parse(records.get('dev/schedule/config.json').body).revision, 99);
+});
+
+test('missing or weak metadata ETags never permit conditional overwrite', async () => {
+  for (const etag of [undefined, 'W/1']) {
+    const {store, io, records} = memoryStore();
+    await store.write('work-schedule', {revision:1});
+    const get = io.get;
+    io.get = async path => { const result = await get(path); result.blob.etag = 'W/' + result.blob.etag; return result; };
+    io.head = async () => ({etag});
+    await assert.rejects(store.write('work-schedule', {revision:2}), /目标数据已变化/);
+    assert.equal(records.size,1);
+  }
+});
+
+
+test('real SDK precondition error is classified even though its name is Error', async () => {
+  const {BlobPreconditionFailedError} = await import('@vercel/blob');
+  const {store,io} = memoryStore();
+  io.put = async () => { throw new BlobPreconditionFailedError(); };
+  await assert.rejects(store.write('work-schedule',{revision:1}), error=>error.code==='VERSION_CONFLICT' && error.status===409);
+});
