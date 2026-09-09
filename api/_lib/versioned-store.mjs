@@ -1,4 +1,4 @@
-import { get, put, list } from '@vercel/blob';
+import { get, put, list, head, BlobNotFoundError, BlobPreconditionFailedError } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { hasBlobConfig } from './blob-config.mjs';
@@ -36,19 +36,32 @@ export function assertWritable(env = process.env) {
 }
 
 // Injectable storage enables failure/concurrency tests without accessing a real store.
-export function createVersionedStore(io = { get, put, list }, env = process.env) {
+export function createVersionedStore(io = { get, put, list, head }, env = process.env) {
   function target(moduleId) {
     if (!Object.hasOwn(PATHS, moduleId)) throw new Error('未知模块');
     return storageScope(env) + PATHS[moduleId];
   }
-  async function readPath(path) {
+  async function readPath(path, forWrite = false) {
     try {
       const result = await io.get(path, { access: 'private', useCache: false });
       if (!result || result.statusCode === 404) return null;
       if (result.statusCode !== 200 || !result.stream) throw new Error('读取存储失败');
-      return { data: await new Response(result.stream).json(), etag: result.blob?.etag };
+      const data = await new Response(result.stream).json();
+      let etag = result.blob?.etag;
+      if (forWrite && etag?.startsWith('W/')) {
+        // Compressed GET responses can expose a weak HTTP ETag. Conditional
+        // Blob writes require the strong storage ETag from the metadata API.
+        // Verify both describe the same revision; never pair new metadata with
+        // an older body or merely strip W/ and assume it is safe to overwrite.
+        const metadata = await io.head(path);
+        if (!metadata?.etag || metadata.etag.startsWith('W/') || metadata.etag !== etag.slice(2)) {
+          throw failure('VERSION_CONFLICT', '读取期间目标数据已变化，请重新核对后发布', 409);
+        }
+        etag = metadata.etag;
+      }
+      return { data, etag };
     } catch (error) {
-      if (error.name === 'BlobNotFoundError') return null;
+      if (error instanceof BlobNotFoundError || error.name === 'BlobNotFoundError') return null;
       throw error;
     }
   }
@@ -62,8 +75,11 @@ export function createVersionedStore(io = { get, put, list }, env = process.env)
     assertWritable(env);
     const path = target(moduleId);
     let old;
-    try { old = await readPath(path); }
-    catch { throw failure('STORAGE_READ_FAILED', '读取当前数据失败，尚未写入'); }
+    try { old = await readPath(path, true); }
+    catch (error) {
+      if (error.code === 'VERSION_CONFLICT') throw error;
+      throw failure('STORAGE_READ_FAILED', '读取当前数据或版本元数据失败，尚未写入');
+    }
     const version = Date.now() + '-' + randomUUID();
     if (old) {
       if (!old.etag) throw failure('MISSING_ETAG', '缺少版本标识，拒绝覆盖');
@@ -79,7 +95,7 @@ export function createVersionedStore(io = { get, put, list }, env = process.env)
         // A failed response is ambiguous: the write may have succeeded, or the
         // ETag may have changed without a content change. Read once from origin
         // before deciding whether a single conditional retry is safe.
-        const current = await readPath(path);
+        const current = await readPath(path, true);
         if (current && isDeepStrictEqual(current.data, data)) return { backupVersion: old ? version : null };
         if (!old || !current || !isDeepStrictEqual(current.data, old.data) || !current.etag) throw firstError;
         try {
@@ -90,7 +106,8 @@ export function createVersionedStore(io = { get, put, list }, env = process.env)
         }
       }
     } catch (error) {
-      if (['BlobPreconditionFailedError', 'BlobAlreadyExistsError'].includes(error.name)) {
+      if (error instanceof BlobPreconditionFailedError
+        || ['BlobPreconditionFailedError', 'BlobAlreadyExistsError'].includes(error.name)) {
         throw failure('VERSION_CONFLICT', '目标数据已变化，请重新核对后发布', 409);
       }
       throw Object.assign(new Error('写入响应未确认，请先核对目标数据，勿直接重发'), { code: 'WRITE_UNCONFIRMED', status: 503, writeStarted: true });
