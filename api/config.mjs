@@ -2,10 +2,8 @@ import crypto from "node:crypto";
 import { hasBlobConfig } from './_lib/blob-config.mjs';
 import { versionedStore } from './_lib/versioned-store.mjs';
 
-const ALLOWED_TYPES = new Set([
-  "work", "rest", "key", "student_entry", "lesson", "recess", "eye_exercise",
-  "lunch", "hygiene", "broadcast", "nap", "club",
-]);
+import { validConfig } from '../shared/data-validation.cjs';
+export { validConfig };
 
 function json(data, status = 200) {
   return Response.json(data, {
@@ -20,12 +18,6 @@ function safeEqual(a, b) {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-export function validConfig(config) {
-  return config && typeof config === "object" && !Array.isArray(config)
-    && Array.isArray(config.schedule) && Array.isArray(config.workdays)
-    && config.workdays.length === 7 && Array.isArray(config.tips)
-    && config.schedule.every((item) => item && typeof item === "object" && ALLOWED_TYPES.has(item.type));
-}
 
 export async function GET() {
   try {

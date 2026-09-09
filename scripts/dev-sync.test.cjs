@@ -5,7 +5,7 @@ const os=require('node:os');
 const path=require('node:path');
 const {createSync,ORIGIN,hash}=require('../shared/dev-sync.cjs');
 const client=require('../shared/release-client.cjs');
-function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,missingFirstSheet=false,environment='dev',origin=ORIGIN}={}) {
+function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,missingFirstSheet=false,rejected=false,environment='dev',origin=ORIGIN}={}) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'school-dev-sync-test-'));
   t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
   const ids=['school-calendar','work-schedule','duty-roster'];
@@ -18,6 +18,7 @@ function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,mis
     if(route==='/api/releases' && !options.method) return Response.json({versions:[]});
     if(route==='/api/releases') {
       const body=JSON.parse(options.body);assert.equal(body.expectedEnvironment,environment);
+      if(rejected) return Response.json({error:'旧数据备份失败',code:'BACKUP_FAILED',writeStarted:false},{status:503});
       if(failureBeforeWrite) throw new Error('fetch failed');
       written[body.moduleId]=body.data;
       if(failure) throw new Error('fetch failed');
@@ -75,7 +76,8 @@ test('lost publish response is reconciled read-only and one click continues',asy
 test('an unconfirmed write is never retried automatically and manual reconcile unlocks a confirmed mismatch',async t=>{
   const f=fixture(t,{failureBeforeWrite:true});f.sync.start('owner',f.ids);await f.run();
   assert.equal(f.sync.status().job.items[0].state,'unknown');
-  assert.equal(f.sync.status().job.items[1].state,'pending');
+  assert.equal(f.sync.status().job.items[1].state,'failed');
+  assert.match(f.sync.status().job.items[1].message,/尚未执行/);
   assert.throws(()=>f.sync.start('owner',f.ids));
   const before=f.calls.length;await f.sync.reconcile();
   assert.equal(f.sync.status().job.items[0].state,'failed');
@@ -111,6 +113,14 @@ test('interrupted pending items become retryable failures after restart',t=>{
   const resumed=createSync(f.deps);
   assert.equal(resumed.status().job.items[0].state,'failed');
   assert.match(resumed.status().job.items[0].message,/重新同步|可重新同步/);
+});
+
+test('explicit pre-write rejection stays retryable and does not block other modules', async t => {
+  const f=fixture(t,{rejected:true}); f.sync.start('owner',f.ids); await f.run();
+  assert(f.sync.status().job.items.every(item=>item.state==='failed' && item.message.includes('旧数据备份失败')));
+  assert.equal(Object.keys(f.written).length,0);
+  assert.doesNotThrow(()=>f.sync.start('owner',f.ids));
+  await f.run();
 });
 test('production one click uses an independent config and publishes as main',async t=>{
   const origin='https://rrita.site';

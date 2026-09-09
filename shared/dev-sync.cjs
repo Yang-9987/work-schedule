@@ -73,7 +73,12 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
       if(response.status>=300 && response.status<400) throw new Error('目标被 Vercel 登录保护拦截，请配置自动化访问 Secret');
       if(!(response.headers.get('content-type')||'').includes('application/json')) throw new Error('目标未返回 JSON，请检查 Vercel 访问保护配置');
       const body=await response.json();
-      if(!response.ok) throw new Error(response.status===401 ? '目标管理员验证失败或登录已过期' : '目标接口失败（HTTP '+response.status+'），请核对配置或目标数据');
+      if(!response.ok) {
+        const error = new Error(response.status===401 ? '目标管理员验证失败或登录已过期' : (typeof body.error === 'string' ? body.error : '目标接口失败（HTTP '+response.status+'），请核对配置或目标数据'));
+        // Only explicit server evidence proves that no write was attempted.
+        error.writeStarted = body.writeStarted;
+        throw error;
+      }
       return body;
     } catch(e) {
       if(/fetch failed|timeout|aborted/i.test(e.message)) throw new Error('连接目标失败或超时，请检查本机代理与网络；未自动重试');
@@ -159,7 +164,9 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
             await remote('/api/releases',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({moduleId:module.id,action:'publish',data,confirm:module.id+':publish',expectedEnvironment:environment})},c);
             await verify(item,c);
           } catch(e) {
-            if(item.state==='unknown') {
+            if(item.state==='unknown' && e.writeStarted === false) {
+              item.state='failed'; item.message=e.message+'；目标明确拒绝本次写入，修正后可重新同步'; persist();
+            } else if(item.state==='unknown') {
               // A failed response does not prove that the write failed. Reconcile
               // with a read-only request so a lost response can still complete
               // the one-click job without issuing the write a second time.
@@ -174,7 +181,12 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
           }
         }
       } catch(e) { for(const item of job.items) if(item.state==='pending') {item.state='failed';item.message=e.message;} }
-      finally { job.running=false; running=false; persist(); }
+      finally {
+        for (const item of job.items) if (item.state === 'pending') {
+          item.state='failed'; item.message='前序模块结果待核对，本模块尚未执行';
+        }
+        job.running=false; running=false; persist();
+      }
     });
     return status();
   }
