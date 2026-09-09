@@ -19,8 +19,12 @@ function canonical(value) {
   return value;
 }
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
-function createSync({dir, reader, previews, loadMappings, saveMappings, resolveModule, request, schedule = setImmediate}) {
-  const configFile = path.join(dir,'dev-sync-config.json'), journalFile = path.join(dir,'dev-sync-state.json');
+function createSync({dir, reader, previews, loadMappings, saveMappings, resolveModule, request, schedule = setImmediate,
+  environment = 'dev', origin = ORIGIN, filePrefix = environment}) {
+  if(!['dev','main'].includes(environment)) throw new Error('同步环境无效');
+  const fixedOrigin = new URL(origin).origin;
+  const environmentName = environment === 'main' ? '正式环境' : '测试环境';
+  const configFile = path.join(dir,filePrefix+'-sync-config.json'), journalFile = path.join(dir,filePrefix+'-sync-state.json');
   let job = read(journalFile), running = false;
   if(job?.running) {
     job.running = false;
@@ -34,23 +38,23 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
     }
     write(journalFile,job);
   }
-  function config() { return read(configFile) || {origin:ORIGIN, proxy:'http://127.0.0.1:7897', username:'admin'}; }
+  function config() { return read(configFile) || {origin:fixedOrigin, proxy:'http://127.0.0.1:7897', username:'admin'}; }
   function status() {
     const c=config();
-    return {origin:c.origin,proxy:c.proxy,username:c.username,hasPassword:!!c.password,hasBypass:!!c.bypass,
+    return {environment,origin:c.origin,proxy:c.proxy,username:c.username,hasPassword:!!c.password,hasBypass:!!c.bypass,
       job:job ? JSON.parse(JSON.stringify(job)) : null, running};
   }
   function save(input) {
     if(running) throw new Error('同步进行中，不能修改配置');
     if((input.password || input.bypass) && input.storeSecrets !== true) throw new Error('请确认允许在本机保存凭据');
     const c=config();
-    if(input.origin !== ORIGIN) throw new Error('仅允许当前已批准的 dev 地址');
+    if(input.origin !== fixedOrigin) throw new Error('仅允许当前已配置的'+environmentName+'地址');
     const proxy = String(input.proxy || '').trim();
     if(proxy) {
       const u=new URL(proxy);
       if(u.protocol!=='http:' || !['127.0.0.1','localhost','[::1]'].includes(u.hostname) || u.username || u.password || u.pathname!=='/' || u.search || u.hash) throw new Error('代理必须是本机 HTTP 地址');
     }
-    const next={origin:ORIGIN,proxy,username:String(input.username||'admin').trim()};
+    const next={origin:fixedOrigin,proxy,username:String(input.username||'admin').trim()};
     if(!next.username || next.username.length>100) throw new Error('管理员账号无效');
     for(const key of ['password','bypass']) {
       const value=input[key];
@@ -60,7 +64,7 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
     write(configFile,next); return status();
   }
   async function remote(endpoint, options={}, c=config()) {
-    if(c.origin!==ORIGIN || !(/^\/api\/(auth|releases|calendar|config|duty-roster)(\?|$)/.test(endpoint))) throw new Error('目标地址不允许');
+    if(c.origin!==fixedOrigin || !(/^\/api\/(auth|releases|calendar|config|duty-roster)(\?|$)/.test(endpoint))) throw new Error('目标地址不允许');
     const dispatcher=c.proxy ? new ProxyAgent(c.proxy) : undefined;
     try {
       const headers=new Headers(options.headers || {});
@@ -77,7 +81,7 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
     } finally { if(dispatcher) await dispatcher.close(); }
   }
   async function login(c) {
-    if(!c.password) throw new Error('请先在 dev 同步设置中保存测试管理员密码');
+    if(!c.password) throw new Error('请先在'+environmentName+'同步设置中保存管理员密码');
     const body=await remote('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUser:c.username,adminPass:c.password})},c);
     if(!body.ok || typeof body.token!=='string' || !body.token) throw new Error('管理员验证响应无效');
     return body.token;
@@ -86,14 +90,23 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
   async function verify(item,c) {
     const body=await remote(ROUTES[item.id],{},c);
     const data=item.id==='duty-roster' ? body.data : body;
-    if(!data || hash(data)!==item.hash) throw new Error('目标数据与本次内容尚不一致，禁止自动重发，请人工核对');
+    if(!data || hash(data)!==item.hash) {
+      const error=new Error('目标数据与本次内容尚不一致，禁止自动重发，请人工核对');
+      error.code='TARGET_MISMATCH'; throw error;
+    }
     item.state='success'; item.message='已读取目标并核对数据一致'; persist();
   }
   async function reconcile() {
     if(running) throw new Error('同步进行中');
     running=true;
     try { for(const item of job?.items || []) if(item.state==='unknown') {
-      try { await verify(item,config()); } catch(e) { item.message=e.message; persist(); }
+      try { await verify(item,config()); }
+      catch(e) {
+        if(e.code==='TARGET_MISMATCH') {
+          item.state='failed'; item.message='已确认目标没有采用本次数据，可以重新同步';
+        } else item.message=e.message;
+        persist();
+      }
     } return status(); } finally {running=false;}
   }
   function start(owner, ids) {
@@ -103,7 +116,7 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
     const set=loadMappings(), c=config();
     const modules=ids.map(id=>set.modules.find(m=>m.id===id));
     if(modules.some(m=>!m?.source.documentUrl || !m.source.sheet)) throw new Error('请先保存所选模块的表格地址、子表和字段映射');
-    if(!c.password) throw new Error('请先配置测试管理员密码');
+    if(!c.password) throw new Error('请先配置'+environmentName+'管理员密码');
     running=true;
     job={id:crypto.randomUUID(),running:true,startedAt:new Date().toISOString(),items:modules.map(m=>({id:m.id,name:m.name,state:'pending',message:'等待同步'}))};
     try { persist(); } catch(e) {running=false;throw e;}
@@ -143,7 +156,7 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
             item.count=current.result.rowCount; item.hash=hash(data);
             // Persist uncertainty BEFORE making a write. A crash cannot permit blind retry.
             item.state='unknown'; item.message='正在发布，结果待核对'; persist();
-            await remote('/api/releases',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({moduleId:module.id,action:'publish',data,confirm:module.id+':publish',expectedEnvironment:'dev'})},c);
+            await remote('/api/releases',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({moduleId:module.id,action:'publish',data,confirm:module.id+':publish',expectedEnvironment:environment})},c);
             await verify(item,c);
           } catch(e) {
             if(item.state==='unknown') {
@@ -165,6 +178,6 @@ function createSync({dir, reader, previews, loadMappings, saveMappings, resolveM
     });
     return status();
   }
-  return {status,save,start,reconcile,remote,active:()=>running,test:async()=>{await login(config());return {ok:true,message:'dev 管理员及网络连接验证通过'};}};
+  return {status,save,start,reconcile,remote,active:()=>running,test:async()=>{await login(config());return {ok:true,message:environmentName+'管理员及网络连接验证通过'};}};
 }
 module.exports={createSync,hash,ORIGIN};

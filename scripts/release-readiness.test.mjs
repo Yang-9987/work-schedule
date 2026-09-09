@@ -105,6 +105,36 @@ test('concurrent changes are not silently overwritten', async () => {
   await assert.rejects(store.write('school-calendar', {revision:2}));
   assert.deepEqual(await store.read('school-calendar'), {revision:99});
 });
+test('unchanged content with a refreshed ETag retries one conditional overwrite safely', async () => {
+  const {store, io, records} = memoryStore();
+  await store.write('school-calendar', {revision:1});
+  const put = io.put; let currentAttempts=0;
+  io.put = async (path, ...args) => {
+    if (path === 'dev/school-calendar/calendar.json' && args[1].ifMatch && ++currentAttempts === 1) {
+      records.get(path).etag='refreshed-etag';
+      throw new Error('stale etag');
+    }
+    return put(path, ...args);
+  };
+  await store.write('school-calendar', {revision:2});
+  assert.equal(currentAttempts,2);
+  assert.deepEqual(await store.read('school-calendar'), {revision:2});
+});
+test('a lost successful overwrite response is reconciled without another write', async () => {
+  const {store, io} = memoryStore();
+  await store.write('school-calendar', {revision:1});
+  const put = io.put; let currentAttempts=0;
+  io.put = async (path, ...args) => {
+    if (path === 'dev/school-calendar/calendar.json' && args[1].ifMatch && ++currentAttempts === 1) {
+      await put(path, ...args);
+      throw new Error('response lost');
+    }
+    return put(path, ...args);
+  };
+  await store.write('school-calendar', {revision:2});
+  assert.equal(currentAttempts,1);
+  assert.deepEqual(await store.read('school-calendar'), {revision:2});
+});
 test('calendar sync uses multiline parser and no longer needs old columns', () => {
   const config = {source:{fields:{date:'日期',title:'事件'}},calendar:{schoolName:'测试',academicYear:'2026'}};
   const data = makeCalendar(config, [{日期:'2026-09-01',事件:'1. 开学\n2. '+ '活动内容'.repeat(15)}]);

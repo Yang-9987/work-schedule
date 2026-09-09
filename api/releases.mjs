@@ -27,5 +27,8 @@ export async function POST(request) {
     if (action === 'rollback') return json({ ok: true, ...await versionedStore.rollback(moduleId, body.version, validators[moduleId]) });
     if (!validators[moduleId](body.data)) return json({ error: '数据校验失败' }, 400);
     return json({ ok: true, ...await versionedStore.write(moduleId, body.data) });
-  } catch { return json({ error: '写入未启用、版本冲突、版本无效或存储不可用；未自动重试' }, 503); }
+  } catch (error) {
+    console.error('release write failed', { moduleId, action, name: error?.name, message: error?.message });
+    return json({ error: '写入未启用、版本冲突、版本无效或存储不可用；未自动重试' }, 503);
+  }
 }

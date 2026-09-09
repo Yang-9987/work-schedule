@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var module, targets=[], token='', cursor='', busy=false;
+  var module, targets=[], token='', cursor='', busy=false, loadedVersions=0;
   var el = function(id) { return document.getElementById(id); };
   var dialog=el('releaseDialog');
   function environment() { return el('releaseEnvironment').value; }
@@ -23,20 +23,22 @@
   }
   async function history(append) {
     var b=await api('history',{cursor:append?cursor:''});
-    if(!append)el('releaseVersions').replaceChildren();
-    (b.versions||[]).forEach(function(v){
+    if(!append){el('releaseVersions').replaceChildren();loadedVersions=0;}
+    (b.versions||[]).forEach(function(v,offset){
       var row=document.createElement('p'), button=document.createElement('button');
-      row.textContent=v.version+' ';button.textContent='回退到此版本';button.type='button';button.disabled=!target().writable;
+      var label=ReleaseVersionLabel.format(v.version,v.savedAt,module.name,loadedVersions+offset);
+      row.textContent=label+' ';button.textContent='回退到这里';button.type='button';button.disabled=!target().writable;
       button.onclick=function(){if(busy)return;run(async function(){
-        if(!confirm('将 '+environment()+' 的 '+module.name+' 回退到 '+v.version+'？当前数据会先备份。')){el('releaseStatus').textContent='已取消';return;}
+        if(!confirm('将 '+environment()+' 的 '+module.name+' 回退到“'+label+'”？当前数据会先备份。')){el('releaseStatus').textContent='已取消';return;}
         await api('rollback',{version:v.version,confirm:environment()+':'+module.id+':rollback'});await history(false);el('releaseStatus').textContent='回退成功。';
       });};row.append(button);el('releaseVersions').append(row);
     });
+    loadedVersions+=(b.versions||[]).length;
     cursor=b.cursor||'';el('releaseMore').hidden=!b.hasMore;
     if(!(b.versions||[]).length&&!append)el('releaseVersions').textContent='暂无备份。首次发布后，再次更新时会备份旧数据。';
   }
   window.addEventListener('open-release',function(event){
-    module=event.detail;token='';el('releasePassword').value='';el('releaseEnvironment').value='dev';el('releaseModule').textContent=module.name+' · '+module.route;el('releaseVersions').replaceChildren();el('releaseMore').hidden=true;dialog.showModal();
+    module=event.detail;token='';loadedVersions=0;el('releasePassword').value='';el('releaseEnvironment').value='dev';el('releaseModule').textContent=module.name+' · '+module.route;el('releaseVersions').replaceChildren();el('releaseMore').hidden=true;dialog.showModal();
     run(async function(){var r=await fetch('/api/local-console/releases/targets',{headers:{Authorization:'Bearer '+(sessionStorage.getItem('localConsoleToken')||'')}});var b=await r.json();if(!r.ok)throw new Error(b.error);targets=b.targets;el('releaseStatus').textContent='先核对目标环境，再验证目标网站管理员。';});
   });
   el('releaseEnvironment').onchange=function(){token='';cursor='';el('releasePassword').value='';el('releaseVersions').replaceChildren();el('releaseMore').hidden=true;controls();el('releaseStatus').textContent='环境已切换，请重新验证。';};

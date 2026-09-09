@@ -1,5 +1,6 @@
 import { get, put, list } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { hasBlobConfig } from './blob-config.mjs';
 
 export const PATHS = {
@@ -63,7 +64,23 @@ export function createVersionedStore(io = { get, put, list }, env = process.env)
       // Fail closed: no current-data overwrite if backup fails.
       await io.put(storageScope(env) + 'history/' + moduleId + '/' + version + '.json', JSON.stringify({ moduleId, version, savedAt: new Date().toISOString(), data: old.data }), { ...options, allowOverwrite: false });
     }
-    await io.put(path, JSON.stringify(data), { ...options, allowOverwrite: !!old, ...(old ? { ifMatch: old.etag } : {}) });
+    const writeCurrent = etag => io.put(path, JSON.stringify(data), { ...options, allowOverwrite: !!old, ...(etag ? { ifMatch: etag } : {}) });
+    try {
+      await writeCurrent(old?.etag);
+    } catch (firstError) {
+      // A failed response is ambiguous: the write may have succeeded, or the
+      // ETag may have changed without a content change. Read once from origin
+      // before deciding whether a single conditional retry is safe.
+      const current = await readPath(path);
+      if (current && isDeepStrictEqual(current.data, data)) return { backupVersion: old ? version : null };
+      if (!old || !current || !isDeepStrictEqual(current.data, old.data) || !current.etag) throw firstError;
+      try {
+        await writeCurrent(current.etag);
+      } catch (retryError) {
+        const afterRetry = await readPath(path);
+        if (!afterRetry || !isDeepStrictEqual(afterRetry.data, data)) throw retryError;
+      }
+    }
     return { backupVersion: old ? version : null };
   }
   async function history(moduleId, cursor) {

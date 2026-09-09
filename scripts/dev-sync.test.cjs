@@ -5,25 +5,27 @@ const os=require('node:os');
 const path=require('node:path');
 const {createSync,ORIGIN,hash}=require('../shared/dev-sync.cjs');
 const client=require('../shared/release-client.cjs');
-function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,missingFirstSheet=false}={}) {
+function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,missingFirstSheet=false,environment='dev',origin=ORIGIN}={}) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'school-dev-sync-test-'));
   t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
   const ids=['school-calendar','work-schedule','duty-roster'];
   const modules=ids.map(id=>({id,name:id,source:{documentUrl:'https://doc.weixin.qq.com/smartsheet/test-only',sheet:'sheet'}}));
-  const previews=new Map(), written={}, calls=[];let taskModule,run;
+  const previews=new Map(), written={}, calls=[];
+  const existing=Object.fromEntries(ids.map(id=>[id,{sample:'existing-'+id}]));let taskModule,run;
   const request=async(url,options)=>{
     calls.push({url,options}); const route=new URL(url).pathname;
     if(route==='/api/auth') return Response.json({ok:true,token:'synthetic-admin-token'});
     if(route==='/api/releases' && !options.method) return Response.json({versions:[]});
     if(route==='/api/releases') {
-      const body=JSON.parse(options.body);assert.equal(body.expectedEnvironment,'dev');
+      const body=JSON.parse(options.body);assert.equal(body.expectedEnvironment,environment);
       if(failureBeforeWrite) throw new Error('fetch failed');
       written[body.moduleId]=body.data;
       if(failure) throw new Error('fetch failed');
       return Response.json({ok:true});
     }
     const id={'/api/calendar':'school-calendar','/api/config':'work-schedule','/api/duty-roster':'duty-roster'}[route];
-    return Response.json(id==='duty-roster'?{data:written[id]}:written[id]);
+    const data=written[id] || existing[id];
+    return Response.json(id==='duty-roster'?{data}:data);
   };
   const deps={dir,previews,loadMappings:()=>({modules}),saveMappings:set=>{modules.splice(0,modules.length,...set.modules);},
     resolveModule:m=>({changed:true,module:{...m,source:{...m.source,sheet:'recovered-sheet'}}}),
@@ -40,9 +42,9 @@ function fixture(t,{failure=false,failureBeforeWrite=false,readFailure=false,mis
       return {state:'ready',result:{rowCount:2},readCount:2,total:2,pass:2};
     }
   }};
-  const sync=createSync(deps);
-  sync.save({origin:ORIGIN,proxy:'',username:'admin',password:'synthetic-password',bypass:'synthetic-bypass',storeSecrets:true});
-  return {sync,dir,calls,written,ids,deps,run:()=>run()};
+  const sync=createSync({...deps,environment,origin});
+  sync.save({origin,proxy:'',username:'admin',password:'synthetic-password',bypass:'synthetic-bypass',storeSecrets:true});
+  return {sync,dir,calls,written,ids,deps,origin,environment,run:()=>run()};
 }
 test('settings restrict origin/proxy and never return stored secrets',t=>{
   const {sync,dir}=fixture(t);
@@ -70,13 +72,14 @@ test('lost publish response is reconciled read-only and one click continues',asy
   assert(f.sync.status().job.items.every(item=>item.state==='success'));
   assert.equal(f.calls.filter(c=>c.url.endsWith('/api/releases')&&c.options.method==='POST').length,3);
 });
-test('an unconfirmed write is never retried automatically',async t=>{
+test('an unconfirmed write is never retried automatically and manual reconcile unlocks a confirmed mismatch',async t=>{
   const f=fixture(t,{failureBeforeWrite:true});f.sync.start('owner',f.ids);await f.run();
   assert.equal(f.sync.status().job.items[0].state,'unknown');
   assert.equal(f.sync.status().job.items[1].state,'pending');
   assert.throws(()=>f.sync.start('owner',f.ids));
   const before=f.calls.length;await f.sync.reconcile();
-  assert.equal(f.sync.status().job.items[0].state,'unknown');
+  assert.equal(f.sync.status().job.items[0].state,'failed');
+  assert.match(f.sync.status().job.items[0].message,/可以重新同步/);
   assert(f.calls.slice(before).every(c=>!c.options.method));
 });
 test('read failures never publish and do not claim success',async t=>{
@@ -108,4 +111,14 @@ test('interrupted pending items become retryable failures after restart',t=>{
   const resumed=createSync(f.deps);
   assert.equal(resumed.status().job.items[0].state,'failed');
   assert.match(resumed.status().job.items[0].message,/重新同步|可重新同步/);
+});
+test('production one click uses an independent config and publishes as main',async t=>{
+  const origin='https://rrita.site';
+  const f=fixture(t,{environment:'main',origin});
+  assert.equal(f.sync.status().environment,'main');
+  assert.equal(fs.statSync(path.join(f.dir,'main-sync-config.json')).mode & 0o777,0o600);
+  assert.throws(()=>f.sync.save({origin:ORIGIN,proxy:''}),/正式环境/);
+  f.sync.start('owner',['duty-roster']);await f.run();
+  assert.equal(f.sync.status().job.items[0].state,'success');
+  assert(f.calls.every(call=>call.url.startsWith(origin+'/api/')));
 });

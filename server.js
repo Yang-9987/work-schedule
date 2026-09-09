@@ -55,7 +55,11 @@ const fullReader = require('./shared/paged-read.cjs').createReader({ finish(modu
   return { previewUrl: module.route + '?localPreview=1', rowCount, sourceRowCount: rows.length, issueCount: 0 };
 } });
 setInterval(() => fullReader.sweep(), 60000).unref();
-const devSync = require('./shared/dev-sync.cjs').createSync({dir:DATA_DIR, reader:fullReader, previews:localPagePreviews,
+const createSync = require('./shared/dev-sync.cjs').createSync;
+const MAIN_ORIGIN = process.env.RELEASE_MAIN_URL || 'https://rrita.site';
+const MAIN_WRITES_ENABLED = process.env.RELEASE_MAIN_ENABLED !== 'false';
+const releaseEnvironment = {...process.env, RELEASE_MAIN_URL: MAIN_ORIGIN};
+const syncDependencies = {dir:DATA_DIR, reader:fullReader, previews:localPagePreviews,
   loadMappings() {
     const value=loadJson(MAPPINGS_FILE);
     if(!mappingModel.validMappingSet(value)) throw new Error('请先保存有效的字段映射');
@@ -66,9 +70,17 @@ const devSync = require('./shared/dev-sync.cjs').createSync({dir:DATA_DIR, reade
     if(!mappingModel.validMappingSet(value)) throw new Error('自动修复后的映射无效，已停止同步');
     saveJson(MAPPINGS_FILE,value);
   }
-});
+};
+const devSync = createSync(syncDependencies);
+const mainSync = createSync({...syncDependencies, environment:'main', origin:MAIN_ORIGIN});
+const syncTarget = environment => {
+  if(environment === 'dev') return devSync;
+  if(environment === 'main' && MAIN_WRITES_ENABLED) return mainSync;
+  throw new Error('正式环境同步已锁定');
+};
+const anySyncActive = () => devSync.active() || mainSync.active();
 const releaseRemote = (environment, endpoint, options) => environment === 'dev'
-  ? devSync.remote(endpoint, options) : releaseClient.remote(environment, endpoint, options);
+  ? devSync.remote(endpoint, options) : releaseClient.remote(environment, endpoint, options, releaseEnvironment);
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -409,11 +421,13 @@ const server = http.createServer((req, res) => {
     }
     if (p === '/api/local-console/releases/targets' && req.method === 'GET') {
       return send(res, 200, { targets: ['dev', 'main'].map(environment => {
-        let origin = ''; try { origin = environment === 'dev' ? devSync.status().origin : releaseClient.target(environment); } catch {}
-        return { environment, origin, writable: !!origin && (environment === 'dev' || process.env.RELEASE_MAIN_ENABLED === 'true') };
+        let origin = ''; try { origin = environment === 'dev' ? devSync.status().origin : releaseClient.target(environment, releaseEnvironment); } catch {}
+        return { environment, origin, writable: !!origin && (environment === 'dev' || MAIN_WRITES_ENABLED) };
       }) });
     }
     if (p === '/api/local-console/dev-sync/status' && req.method === 'GET') return send(res,200,devSync.status());
+    const syncRoute = p.match(/^\/api\/local-console\/sync\/(dev|main)\/(status|settings|test|reconcile|start)$/);
+    if(syncRoute && req.method === 'GET' && syncRoute[2] === 'status') return send(res,200,syncTarget(syncRoute[1]).status());
     if (req.method !== "POST") return send(res, 405, { ok: false, error: "method not allowed" });
     readRequestJson(req).then(async (body) => {
       if(p.startsWith('/api/local-console/dev-sync/')) {
@@ -422,11 +436,24 @@ const server = http.createServer((req, res) => {
         if(p.endsWith('/reconcile')) return send(res,200,await devSync.reconcile());
         if(p.endsWith('/start')) {
           if(body.confirm!=='sync:dev') throw new Error('请明确确认同步到 dev');
+          if(anySyncActive()) throw new Error('已有同步正在进行，请等待完成后再操作');
           return send(res,202,devSync.start(readOwner(req),body.modules));
         }
         throw new Error('同步操作无效');
       }
-      if(devSync.active()) throw new Error('dev 同步进行中，请等待完成后再修改映射或执行其他读取/发布');
+      if(syncRoute) {
+        const environment=syncRoute[1], action=syncRoute[2], sync=syncTarget(environment);
+        if(action==='settings') return send(res,200,sync.save(body));
+        if(action==='test') return send(res,200,await sync.test());
+        if(action==='reconcile') return send(res,200,await sync.reconcile());
+        if(action==='start') {
+          if(body.confirm!=='sync:'+environment) throw new Error('请明确确认同步到 '+environment);
+          if(anySyncActive()) throw new Error('已有同步正在进行，请等待完成后再操作');
+          return send(res,202,sync.start(readOwner(req),body.modules));
+        }
+        throw new Error('同步操作无效');
+      }
+      if(anySyncActive()) throw new Error('数据同步进行中，请等待完成后再修改映射或执行其他读取/发布');
       if (p.startsWith('/api/local-console/full-read/')) {
         const owner = readOwner(req);
         if (p.endsWith('/start')) {
@@ -448,14 +475,14 @@ const server = http.createServer((req, res) => {
       }
       if (p.startsWith('/api/local-console/releases/')) {
         const environment = body.environment;
-        if(environment!=='dev') releaseClient.target(environment);
+        if(environment!=='dev') releaseClient.target(environment, releaseEnvironment);
         if (p.endsWith('/login')) return send(res, 200, await releaseRemote(environment, '/api/auth', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUser:body.username,adminPass:body.password})}));
         const headers = {'Content-Type':'application/json',Authorization:'Bearer ' + String(body.token || '')};
         if (!['school-calendar','work-schedule','duty-roster'].includes(body.moduleId)) throw new Error('模块无效');
         if (p.endsWith('/history')) return send(res, 200, await releaseRemote(environment, '/api/releases?moduleId=' + body.moduleId + (body.cursor ? '&cursor=' + encodeURIComponent(body.cursor) : ''), {headers}));
         if (!p.endsWith('/publish') && !p.endsWith('/rollback')) throw new Error('操作无效');
-        if(environment==='dev' && devSync.status().job?.items.some(item=>item.state==='unknown')) throw new Error('上次 dev 同步结果待核对，请先使用“核对上次发布结果”，不要重复发布或回退');
-        if (environment === 'main' && process.env.RELEASE_MAIN_ENABLED !== 'true') throw new Error('正式环境尚未批准开放');
+        if((environment==='dev' ? devSync : mainSync).status().job?.items.some(item=>item.state==='unknown')) throw new Error('上次 '+environment+' 同步结果待核对，请先使用“核对上次发布结果”，不要重复发布或回退');
+        if (environment === 'main' && !MAIN_WRITES_ENABLED) throw new Error('正式环境尚未批准开放');
         const action = p.endsWith('/publish') ? 'publish' : 'rollback';
         if (body.confirm !== environment + ':' + body.moduleId + ':' + action) throw new Error('确认信息不匹配');
         let data;

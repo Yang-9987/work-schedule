@@ -44,9 +44,13 @@
       <div><span>映射配置</span><strong id="mappingUpdate">尚未读取</strong></div>
     </section>
 
-    <section class="panel sync-panel" aria-label="同步到测试环境">
-      <div class="sync-heading"><h2>同步数据</h2><span class="environment-label">dev · 测试环境</span></div>
-      <p>使用已保存的字段映射，完整读取、核对后更新测试网站。不会发布到 main。请暂勿编辑源表。</p>
+    <section class="panel sync-panel" aria-label="同步数据">
+      <div class="sync-heading">
+        <h2>同步数据</h2>
+        <label class="sync-environment-select">目标环境<select id="syncEnvironment"><option value="dev">dev · 测试环境</option><option value="main">Production · 正式环境</option></select></label>
+        <span class="environment-label" id="syncEnvironmentLabel">dev · 测试环境</span>
+      </div>
+      <p id="syncDescription">使用已保存的字段映射，完整读取、核对后更新测试网站。不会发布到 Production。请暂勿编辑源表。</p>
       <div class="sync-modules">
         <label><input type="checkbox" name="syncModule" value="school-calendar" checked>校历</label>
         <label><input type="checkbox" name="syncModule" value="work-schedule" checked>作息</label>
@@ -60,14 +64,14 @@
       <p id="syncStatus" role="status" aria-live="polite">展开设置，完成首次连接配置。</p>
       <ul id="syncResults"></ul>
       <details id="syncSettings">
-        <summary>dev 同步设置（首次配置）</summary>
+        <summary id="syncSettingsTitle">dev 同步设置（首次配置）</summary>
         <form id="syncSettingsForm">
-          <label class="form-wide">测试地址<input id="syncOrigin" type="url" readonly></label>
+          <label class="form-wide"><span id="syncOriginLabel">测试地址</span><input id="syncOrigin" type="url" readonly></label>
           <label>本机 HTTP 代理（留空表示直连）<input id="syncProxy" type="url" placeholder="http://127.0.0.1:7897"></label>
-          <label>dev 管理员账号<input id="syncUser" autocomplete="username" value="admin"></label>
-          <label>dev 管理员密码<input id="syncPassword" type="password" autocomplete="new-password" placeholder="留空保留已保存的密码"></label>
+          <label><span id="syncUserLabel">dev 管理员账号</span><input id="syncUser" autocomplete="username" value="admin"></label>
+          <label><span id="syncPasswordLabel">dev 管理员密码</span><input id="syncPassword" type="password" autocomplete="new-password" placeholder="留空保留已保存的密码"></label>
           <label>Vercel 自动化访问 Secret<input id="syncBypass" type="password" autocomplete="new-password" placeholder="留空保留已保存的 Secret"></label>
-          <p class="form-wide credentials-note">凭据仅保存到本机权限为 600 的配置文件，不上传 Git、不回显。该文件未加密，本机当前用户可读取；请勿共享电脑账号或备份此文件到公共位置。Vercel Secret 仅发送到上方固定 dev 地址。</p>
+          <p class="form-wide credentials-note" id="syncCredentialsNote">凭据仅保存到本机权限为 600 的配置文件，不上传 Git、不回显。该文件未加密，本机当前用户可读取；请勿共享电脑账号或备份此文件到公共位置。Vercel Secret 仅发送到上方固定地址。</p>
           <label class="check-label form-wide"><input id="syncConsent" type="checkbox">允许将本次填写的凭据保存在本机，用于以后的一键同步</label>
           <label class="check-label"><input id="syncClearPassword" type="checkbox">清除已保存的管理员密码</label>
           <label class="check-label"><input id="syncClearBypass" type="checkbox">清除已保存的 Vercel Secret</label>
@@ -156,7 +160,8 @@
     <button id="releaseClose" type="button">关闭</button>
   </dialog>
   <script src="/assets/js/local-console.js?v=11" defer></script>
-  <script src="/assets/js/local-releases.js?v=1" defer></script>
-  <script src="/assets/js/local-sync.js?v=1" defer></script>
+  <script src="/assets/js/version-label.js?v=1" defer></script>
+  <script src="/assets/js/local-releases.js?v=2" defer></script>
+  <script src="/assets/js/local-sync.js?v=2" defer></script>
 </body>
 </html>
