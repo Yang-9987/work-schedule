@@ -117,56 +117,8 @@
     if (!dates.length) html += '<p class="person-empty">暂无值班日期</p>';
     return html + '</div></section>';
   }
-  function parseDutyTimes(value) {
-    var raw = String(value || "").trim();
-    // Split on period labels, not semicolons: afternoon contains several times.
-    var pattern = /(^|[\s;；])(早晨值周|早晨|早上|上午|早|中午陪餐|中午|午|下午到岗|下午)\s*[：:]?\s*(?=\d{1,2}[:：])/g;
-    var markers = [], match;
-    while ((match = pattern.exec(raw))) {
-      // A period name inside an explanation must not create a new section.
-      var depth = 0;
-      for (var i = 0; i < match.index; i++) {
-        if (raw[i] === "（" || raw[i] === "(") depth++;
-        else if (raw[i] === "）" || raw[i] === ")") depth = Math.max(0, depth - 1);
-      }
-      if (depth) continue;
-      var key = match[2].indexOf("下午") === 0 ? "afternoon" : /^(中午|午)/.test(match[2]) ? "lunch" : "morning";
-      markers.push({ key: key, start: match.index, content: pattern.lastIndex });
-    }
-    var result = {};
-    markers.forEach(function (marker, index) {
-      var content = raw.slice(marker.content, index + 1 < markers.length ? markers[index + 1].start : raw.length).replace(/[;；\s]+$/, "");
-      result[marker.key] = result[marker.key] ? result[marker.key] + "；" + content : content;
-    });
-    // Keep unrecognized text visible instead of silently losing source content.
-    if (!markers.length || raw.slice(0, markers[0].start).trim()) result.original = raw;
-    return result;
-  }
-  function renderNotice() {
-    var groups = new Map();
-    var dutyRows = rows.filter(function (row) { return row.type !== "holiday"; });
-    dutyRows.forEach(function (row) {
-      var time = String(row.shift || "").trim();
-      if (!time) return;
-      if (!groups.has(time)) groups.set(time, new Set());
-      groups.get(time).add(row.date);
-    });
-    var html = '<section class="card"><div class="card-head"><h2 class="card-title">值周时间安排</h2></div>';
-    var allHaveTime = dutyRows.length > 0 && dutyRows.every(function (row) { return String(row.shift || "").trim(); });
-    groups.forEach(function (dates, time) {
-      if (groups.size > 1 || !allHaveTime) html += '<div class="notice-item"><p class="v">适用日期：' + safe(Array.from(dates).sort().join("、")) + '</p></div>';
-      var parsed = parseDutyTimes(time);
-      [["morning", "早晨值周"], ["lunch", "中午陪餐"], ["afternoon", "下午到岗"]].forEach(function (item) {
-        html += '<div class="notice-item"><div><h3 class="t">' + item[1] + '</h3><p class="v">' + safe(parsed[item[0]] || "时间段中未识别到此项，请检查原文") + '</p></div></div>';
-      });
-      if (parsed.original) html += '<div class="notice-item"><div><h3 class="t">时间段原文（请核对格式）</h3><p class="v">' + safe(parsed.original) + '</p></div></div>';
-    });
-    if (!groups.size) html += '<div class="notice-item"><p class="v">暂无时间段数据。</p></div>';
-    else if (!allHaveTime) html += '<div class="notice-item"><p class="v">部分值班记录未填写时间段，请核对表格。</p></div>';
-    return html + '</section><section class="card"><div class="card-head"><h2 class="card-title">值周须知</h2></div><div class="notice-item"><p class="v">' + safe(data.notice || "尚未配置值周须知。") + '</p></div></section>';
-  }
   function renderView() {
-    el("rosterContent").innerHTML = ({week: renderWeek, month: renderMonth, person: renderPerson, notice: renderNotice})[state.view]();
+    el("rosterContent").innerHTML = ({week: renderWeek, month: renderMonth, person: renderPerson})[state.view]();
     document.querySelectorAll("[data-view]").forEach(function (button) {
       button.classList.toggle("active", button.dataset.view === state.view);
       button.setAttribute("aria-pressed", String(button.dataset.view === state.view));
