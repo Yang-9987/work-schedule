@@ -18,6 +18,25 @@ function validCalendar(calendar) {
   return calendar && typeof calendar === "object" && !Array.isArray(calendar)
     && typeof calendar.schoolName === "string" && calendar.schoolName.length <= 40
     && typeof calendar.academicYear === "string" && calendar.academicYear.length <= 30
+    && (calendar.schemaVersion == null || calendar.schemaVersion === 3)
+    && (calendar.term == null || (calendar.term && typeof calendar.term.name === 'string'
+      && validDate(calendar.term.startDate) && validDate(calendar.term.endDate) && validDate(calendar.term.weekStartDate)
+      && calendar.term.weekStartDate <= calendar.term.startDate && calendar.term.startDate <= calendar.term.endDate
+      && new Date(calendar.term.weekStartDate + 'T00:00:00Z').getUTCDay() === 1
+      && Number.isInteger(calendar.term.weekCount) && calendar.term.weekCount > 0 && calendar.term.weekCount <= 60
+      && Math.floor((Date.parse(calendar.term.endDate) - Date.parse(calendar.term.weekStartDate)) / 604800000) + 1 === calendar.term.weekCount))
+    && (calendar.monthlyPlans == null || (Array.isArray(calendar.monthlyPlans) && calendar.monthlyPlans.length <= 24
+      && new Set(calendar.monthlyPlans.map(p => p?.month)).size === calendar.monthlyPlans.length
+      && calendar.monthlyPlans.every(p => p && /^\d{4}-(0[1-9]|1[0-2])$/.test(p.month)
+        && typeof p.theme === 'string' && p.theme.length <= 100 && Array.isArray(p.items) && p.items.length <= 100
+        && p.items.every(i => i && typeof i.id === 'string' && typeof i.title === 'string' && i.title.trim() && i.title.length <= 5000
+          && (i.note == null || (typeof i.note === 'string' && i.note.length <= 5000))))))
+    && (calendar.dayOverrides == null || (Array.isArray(calendar.dayOverrides) && calendar.dayOverrides.length <= 100
+      && new Set(calendar.dayOverrides.map(d => d?.date)).size === calendar.dayOverrides.length
+      && calendar.dayOverrides.every(d => d && validDate(d.date) && ['makeup', 'holiday'].includes(d.kind)
+        && (d.kind !== 'makeup' || (Number.isInteger(d.teachingWeekday) && d.teachingWeekday >= 1 && d.teachingWeekday <= 7))
+        && typeof d.note === 'string' && d.note.length <= 500)))
+    && (calendar.notes == null || (Array.isArray(calendar.notes) && calendar.notes.length <= 20 && calendar.notes.every(n => typeof n === 'string' && n.length <= 5000)))
     && Array.isArray(calendar.events) && calendar.events.length <= 500
     && calendar.events.every((event) => event && typeof event.id === "string" && event.id.length <= 80
       && validDate(event.date)

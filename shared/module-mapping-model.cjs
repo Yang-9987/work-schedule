@@ -17,6 +17,12 @@ function upgradeMappingSet(value) {
       module.mappings = module.mappings.filter((mapping) => ["date", "title"].includes(mapping.target));
       module.view.visibleFields = ["date", "title"];
     }
+    if (module.id === "school-calendar" && module.schema?.id === "calendar.v2") {
+      const template = cloneSeed().modules.find(item => item.id === 'school-calendar');
+      module.schema = JSON.parse(JSON.stringify(template.schema));
+      if (!module.calendarSettings) module.calendarSettings = JSON.parse(JSON.stringify(template.calendarSettings));
+      module.mappings = module.mappings.map(mapping => ({ ...mapping, required: mapping.target === 'title' }));
+    }
     if (module.id !== "duty-roster" || module.schema?.id !== "duty-roster.v1") continue;
     const template = cloneSeed().modules.find((item) => item.id === "duty-roster");
     const oldKeys = new Set(module.schema.fields.map((field) => field.key));

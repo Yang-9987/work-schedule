@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#183247">
   <title>校历 · 校园工作台</title>
   <link rel="stylesheet" href="/assets/css/app-shell.css?v=3">
-  <link rel="stylesheet" href="/assets/css/calendar.css?v=3">
+  <link rel="stylesheet" href="/assets/css/calendar.css?v=4">
 </head>
 <body class="calendar-page">
   <main class="calendar-shell" id="calendarApp">
@@ -16,7 +16,9 @@
       <section class="calendar-card" aria-label="月历"><div class="weekday-row" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div class="month-grid" id="monthGrid"></div></section>
       <aside class="event-panel" id="eventPanel"><div class="event-panel__heading"><div><p class="eyebrow">日期事项</p><h2 id="eventListTitle">本月事件</h2></div><span id="eventCount">0 项</span></div><button id="showAllEvents" class="all-events-button" type="button" hidden>查看本月全部</button><div id="eventList" class="event-list" aria-live="polite"></div></aside>
     </div>
+    <section id="monthlyPlan" class="event-panel monthly-plan" hidden aria-label="月份及待定事项"></section>
+    <section id="calendarNotes" class="calendar-notes" hidden aria-label="校历说明"></section>
   </main>
-  <script src="/assets/js/calendar-text.js?v=1" defer></script><script src="/assets/js/calendar.js?v=6" defer></script>
+  <script src="/assets/js/calendar-text.js?v=3" defer></script><script src="/assets/js/calendar.js?v=8" defer></script>
 </body>
 </html>
