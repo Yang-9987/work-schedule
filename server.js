@@ -42,9 +42,10 @@ const localPagePreviews = new Map();
 const readOwner = req => crypto.createHash('sha256').update(localConsoleToken(req)).digest('hex');
 const fullReader = require('./shared/paged-read.cjs').createReader({ finish(module, rows, proof) {
   const built = previewModel.pageData(module, rows);
-  const rowCount = (built.data.events || built.data.schedule || built.data.rows || []).length;
+  const eventCount = (built.data.events || built.data.schedule || built.data.rows || []).length;
+  const rowCount = eventCount + (built.data.monthlyPlans || []).reduce((sum, plan) => sum + plan.items.length, 0);
   // Keep existing cloud validator limits explicit; never silently truncate output.
-  if (module.id === 'school-calendar' && rowCount > 500) throw new Error('校历解析后超过 500 条事件的当前发布容量，请缩小源表范围');
+  if (module.id === 'school-calendar' && eventCount > 500) throw new Error('校历解析后超过 500 条事件的当前发布容量，请缩小源表范围');
   if (module.id === 'duty-roster' && rowCount > 2000) throw new Error('值周数据超过 2000 条的当前发布容量');
   if (Buffer.byteLength(JSON.stringify(built.data)) > 900 * 1024) throw new Error('解析数据超过发布大小上限，请缩小源表范围');
   if (built.issues.length || !rowCount) throw new Error(built.issues.length ? built.issues.join('；') : '完整数据为空，不能发布');
