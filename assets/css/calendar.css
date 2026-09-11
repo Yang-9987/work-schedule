@@ -57,3 +57,5 @@
 .calendar-notes { margin-top: 24px; color: var(--ink-soft); font-size: 13px; }
 .calendar-notes h2 { font-size: 16px; }
 .event-item p { margin: 4px 0 0; color: var(--ink-soft); font-size: 12px; }
+
+.event-item__full-date { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
