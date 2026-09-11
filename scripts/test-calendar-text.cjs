@@ -15,7 +15,7 @@ calendar.mappings.push({source:'类型',target:'type',transform:'type-map'});
 calendar.view.visibleFields.push('type');
 const upgraded = model.upgradeMappingSet(legacy);
 assert(model.validMappingSet(upgraded));
-assert.deepEqual(upgraded.modules[0].schema.fields.map(f => f.key), ['date', 'title']);
+assert.deepEqual(upgraded.modules[0].schema.fields.map(f => f.key), ['date', 'title', 'month', 'theme', 'type', 'note']);
 assert.deepEqual(upgraded.modules[0].source, legacy.modules[0].source);
 assert.deepEqual(upgraded.modules[1], legacy.modules[1]);
 assert.deepEqual(model.upgradeMappingSet(upgraded), upgraded);
@@ -26,3 +26,31 @@ assert.equal(new Set(built.data.events.map(e => e.id)).size, 5);
 assert.deepEqual(parser.expand(built.data.events), built.data.events);
 assert.equal(preview.pageData(upgraded.modules[0], [{日期:'2026-09-01',事件:'\n  '}]).data.events.length, 0);
 console.log('Calendar multiline parsing, dates, unique IDs and legacy mapping migration passed.');
+
+const { validCalendar } = require('../shared/data-validation.cjs');
+const source = require('../config/calendars/2026-2027-term1.json');
+assert(validCalendar(source));
+assert.equal(source.events.length, 117);
+assert.equal(source.monthlyPlans.reduce((n, p) => n + p.items.length, 0), 44);
+assert.equal(parser.weekNumber(source.term, '2026-09-01'), 1);
+assert.equal(parser.weekNumber(source.term, '2027-01-01'), 18);
+assert.equal(parser.weekNumber(source.term, '2027-01-24'), 21);
+assert.equal(parser.weekNumber(source.term, '2027-01-25'), null);
+assert(validCalendar({ schoolName: '学校', academicYear: '2026', events: [] }));
+for (const change of [{ monthlyPlans: [{ month: '2026-13', theme: '', items: [] }] }, { dayOverrides: [{ date: '2026-09-20', kind: 'makeup', teachingWeekday: 9, note: '' }] }, { term: {...source.term, weekCount: 20} }]) assert(!validCalendar({...source, ...change}));
+const mapped = structuredClone(upgraded.modules[0]);
+for (const [key, label] of [['month', '月份'], ['theme', '主题'], ['note', '说明']]) {
+ mapped.source.fields.push({name: label, type:'text'});
+ mapped.mappings.push({source:label,target:key,transform:'trim',required:false});
+}
+const monthly = preview.pageData(mapped, [{月份:'2026-09',主题:'启序・常规月',事件:'全校家委会会议'}, {日期:'2026-09-01',事件:'开学第一课'}]);
+assert.deepEqual(monthly.issues, []);
+assert.equal(monthly.data.events.length, 1);
+assert.equal(monthly.data.monthlyPlans[0].items.length, 1);
+assert(!Object.hasOwn(monthly.data.monthlyPlans[0].items[0], 'date'));
+assert(preview.pageData(mapped, [{事件:'缺少日期和月份'}]).issues.length);
+assert(preview.pageData(mapped, [{月份:'2026-13',事件:'无效月份'}]).issues.length);
+
+const importedAdjustments = {events:[{id:'source-adjustment',date:'2026-09-20',title:'调课：上周二的课',type:'teaching',note:''}],dayOverrides:source.dayOverrides};
+assert.equal(parser.displayEvents(importedAdjustments).length, 2);
+assert.equal(parser.displayEvents(importedAdjustments).filter(e => e.date === '2026-09-20').length, 1);

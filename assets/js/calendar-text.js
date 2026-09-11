@@ -13,7 +13,22 @@
       });
     });
   }
-  var api = { parse: parse, expand: expand };
+  function displayEvents(calendar) {
+    var events = expand(calendar.events || []);
+    (calendar.dayOverrides || []).forEach(function (day) {
+      var title = (day.kind === 'makeup' ? '调课：' : '放假：') + day.note;
+      if (!events.some(function (event) { return event.date === day.date && event.title === title; })) {
+        events.push({ date: day.date, title: title });
+      }
+    });
+    return events;
+  }
+  function weekNumber(term, date) {
+    if (!term || date < term.startDate || date > term.endDate) return null;
+    var week = Math.floor((Date.parse(date + 'T00:00:00Z') - Date.parse(term.weekStartDate + 'T00:00:00Z')) / 604800000) + 1;
+    return week >= 1 && week <= term.weekCount ? week : null;
+  }
+  var api = { parse: parse, expand: expand, displayEvents: displayEvents, weekNumber: weekNumber };
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.CalendarText = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

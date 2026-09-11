@@ -111,19 +111,28 @@ function normalizedRecords(module, rows) {
 function buildPageData(module, rows) {
   const normalized = normalizedRecords(module, rows);
   if (module.id === "school-calendar") {
+    const plans = new Map();
+    const dated = [];
+    const issues = normalized.issues.slice();
+    normalized.records.forEach((record, index) => {
+      if (record.date) { dated.push({ id: 'preview-' + (index + 1), date: record.date, title: record.title || '', type: CALENDAR_TYPES[record.type] || 'activity', note: record.note || '' }); return; }
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(record.month || '')) { issues.push('第 ' + (index + 1) + ' 条需要日期或有效月份（YYYY-MM）'); return; }
+      let plan = plans.get(record.month);
+      if (!plan) { plan = { month: record.month, theme: record.theme || '', items: [] }; plans.set(record.month, plan); }
+      if (record.theme && plan.theme && record.theme !== plan.theme) issues.push(record.month + ' 的月度主题不一致');
+      if (record.theme) plan.theme = record.theme;
+      calendarText.parse(record.title).forEach((title, line) => plan.items.push({ id: 'monthly-' + (index + 1) + '-' + line, title, note: record.note || '' }));
+    });
     return {
       data: {
+        schemaVersion: 3,
+        monthlyPlans: [...plans.values()],
         schoolName: "首师附一小",
         academicYear: "2026—2027",
-        events: calendarText.expand(normalized.records.map((record, index) => ({
-          id: `preview-${index + 1}`,
-          date: record.date || "",
-          title: record.title || "",
-          type: "activity",
-          note: ""
-        })))
+        ...module.calendarSettings,
+        events: calendarText.expand(dated)
       },
-      issues: normalized.issues
+      issues
     };
   }
   if (module.id === "work-schedule") {

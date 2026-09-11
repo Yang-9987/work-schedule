@@ -161,14 +161,7 @@ function saveJson(file, value) {
   fs.renameSync(tmp, file);
 }
 function validCalendar(calendar) {
-  const types = new Set(["teaching", "activity", "holiday", "exam"]);
-  return calendar && typeof calendar === "object" && !Array.isArray(calendar)
-    && typeof calendar.schoolName === "string" && typeof calendar.academicYear === "string"
-    && Array.isArray(calendar.events) && calendar.events.length <= 500
-    && calendar.events.every((event) => event && typeof event.id === "string"
-      && /^\d{4}-\d{2}-\d{2}$/.test(event.date)
-      && typeof event.title === "string" && event.title.length > 0 && event.title.length <= 5000
-      && types.has(event.type) && typeof (event.note || "") === "string" && (event.note || "").length <= 120);
+  return require('./shared/data-validation.cjs').validCalendar(calendar);
 }
 function publicOf(stored) {
   const c = JSON.parse(JSON.stringify(stored));
