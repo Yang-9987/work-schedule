@@ -84,6 +84,7 @@ const releaseRemote = (environment, endpoint, options) => environment === 'dev'
   ? devSync.remote(endpoint, options) : releaseClient.remote(environment, endpoint, options, releaseEnvironment);
 
 const MIME = {
+  ".pdf": "application/pdf",
   ".html": "text/html; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -559,6 +560,8 @@ const server = http.createServer((req, res) => {
     "/": "/index.html",
     "/work-schedule": "/modules/work-schedule/index.html",
     "/work-schedule/": "/modules/work-schedule/index.html",
+    "/smart-campus-manual": "/modules/smart-campus-manual/index.html",
+    "/smart-campus-manual/": "/modules/smart-campus-manual/index.html",
     "/school-calendar": "/modules/school-calendar/index.html",
     "/school-calendar/": "/modules/school-calendar/index.html",
     "/duty-roster": "/modules/duty-roster/index.html",
