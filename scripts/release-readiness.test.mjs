@@ -20,21 +20,21 @@ test('Blob accepts runtime OIDC without weakening production write gates', () =>
   assert.throws(() => assertWritable({...env, VERCEL_ENV:'production', DATA_ENV:'main'}));
 });
 
-test('homepage exposes all three deployed modules without development placeholders', () => {
+test('homepage exposes all four deployed modules without development placeholders', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
-  for (const route of ['/work-schedule/', '/school-calendar/', '/duty-roster/']) {
+  for (const route of ['/work-schedule/', '/school-calendar/', '/duty-roster/', '/smart-campus-manual/']) {
     assert.equal(html.split('href="' + route + '"').length - 1, 1);
     const rewrite = config.rewrites.find(item => item.source === route);
     assert(rewrite);
     assert(readFileSync(new URL('..' + rewrite.destination, import.meta.url), 'utf8').includes('<html'));
   }
-  assert(html.includes('3 个功能'));
+  assert(html.includes('4 个功能'));
   assert(!/开发中|建设中|查看进度|module-card--developing/.test(html));
 });
 
 test('display pages contain no administration UI or cloud administration routes', () => {
-  for (const file of ['index.html', 'modules/work-schedule/index.html', 'modules/school-calendar/index.html', 'modules/duty-roster/index.html']) {
+  for (const file of ['index.html', 'modules/work-schedule/index.html', 'modules/school-calendar/index.html', 'modules/duty-roster/index.html', 'modules/smart-campus-manual/index.html']) {
     const html = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
     assert(!/管理后台|管理员|管理入口|管理端|\/admin\/|type=["']password["']/.test(html), file);
     assert(/name="viewport"/.test(html), file + ' requires responsive viewport');

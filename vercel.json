@@ -16,6 +16,11 @@
       "source": "/duty-roster",
       "destination": "/duty-roster/",
       "permanent": true
+    },
+    {
+      "source": "/smart-campus-manual",
+      "destination": "/smart-campus-manual/",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -34,14 +39,24 @@
     {
       "source": "/duty-roster/",
       "destination": "/modules/duty-roster/index.html"
+    },
+    {
+      "source": "/smart-campus-manual/",
+      "destination": "/modules/smart-campus-manual/index.html"
     }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
     }
   ]

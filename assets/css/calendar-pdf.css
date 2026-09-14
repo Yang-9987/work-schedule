@@ -1,0 +1,20 @@
+.calendar-pdf { min-height: 100vh; }
+.calendar-pdf.is-native { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+.calendar-pdf__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px max(20px, env(safe-area-inset-right)) 16px max(20px, env(safe-area-inset-left)); background: #fff; border-bottom: 1px solid var(--line); }
+.calendar-pdf__header .eyebrow { margin-bottom: 4px; }
+.calendar-pdf__header h1 { margin: 0; font-size: clamp(17px, 2.5vw, 23px); line-height: 1.5; }
+.calendar-pdf__actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.calendar-pdf button, .calendar-pdf__actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--green); text-decoration: none; font-size: 14px; cursor: pointer; }
+.calendar-pdf button:hover, .calendar-pdf__actions a:hover { background: var(--green-soft); }
+.calendar-pdf__document { display: block; flex: 1; width: 100%; height: 100%; min-height: 0; border: 0; }
+.calendar-pdf__fallback { margin: 24px; }
+#imageReader { padding: 0 12px max(24px, env(safe-area-inset-bottom)); }
+.pdf-reader-tools { max-width: 960px; margin: 16px auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink-soft); font-size: 14px; }
+.pdf-reader-tools p { margin: 0; }
+.pdf-reader-tools form { display: flex; align-items: center; gap: 8px; }
+.pdf-reader-tools input { width: 70px; min-height: 44px; border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; background: #fff; }
+.pdf-page { max-width: 960px; margin: 0 auto 20px; background: #fff; border: 1px solid var(--line); }
+.pdf-page img { display: block; width: 100%; height: auto; }
+.pdf-page figcaption { padding: 8px; text-align: center; color: var(--ink-soft); font-size: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 900px) { .calendar-pdf__header { align-items: flex-start; flex-direction: column; gap: 10px; padding: 14px 16px; } }
+@media print { .calendar-pdf__header, .pdf-reader-tools, #nativeReader { display: none !important; } #imageReader { display: block !important; padding: 0; } .pdf-page { break-after: page; border: 0; } }
