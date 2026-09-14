@@ -1,6 +1,6 @@
 const ALLOWED_TYPES = new Set([
   "work", "rest", "key", "student_entry", "lesson", "recess", "eye_exercise",
-  "lunch", "hygiene", "broadcast", "nap", "club",
+  "lunch", "hygiene", "broadcast", "nap", "club", "after_school_service",
 ]);
 
 function validConfig(config) {
