@@ -60,3 +60,7 @@
 .event-item__full-date { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
 
 @media(max-width:620px) { .monthly-plan { margin-top: 14px; } .event-item__full-date { display: block; margin-left: 0; } }
+
+.event-item.is-today { margin: 8px 0; padding: 16px 12px; border-bottom: 0; border-radius: 8px; background: var(--green-soft); box-shadow: inset 3px 0 0 var(--green); }
+.event-item.is-today h3 { color: var(--green); font-weight: 600; }
+.event-item__today { display: block; width: max-content; padding: 2px 4px; border-radius: 4px; color: #fff; background: var(--green); font: 600 11px/1.5 var(--font-body, sans-serif); }
