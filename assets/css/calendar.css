@@ -38,16 +38,15 @@
  .calendar-shell { width: calc(100% - 24px); padding-top: 22px; }
  .calendar-header { margin-bottom: 18px; }
  .calendar-header h1 { font-size: 26px; }
- .calendar-toolbar { grid-template-columns: 44px minmax(0,1fr) 44px; padding: 8px; gap: 4px; }
+ .calendar-toolbar { grid-template-columns: 44px minmax(0,1fr) 44px; padding: 8px; gap: 4px; border-radius: 10px; }
  .calendar-toolbar h2 { min-width: 0; font-size: 17px; }
  .calendar-toolbar .today-button { grid-column: 1 / -1; justify-self: stretch; }
  .calendar-layout { gap: 14px; margin-top: 12px; }
- .calendar-day { min-height: 70px; padding: 7px 2px; text-align: center; }
- .calendar-day__events { display: none; }
- .calendar-day__count { display: block; min-height: 16px; margin-top: 4px; font-size: 10px; color: var(--green); }
- .calendar-day__number { font-size: 14px; }
+ .calendar-card { display: none; }
  .event-panel { padding: 16px; }
  .event-item h3 { font-size: 15px; }
+ .monthly-plan ol { padding-left: 22px; }
+ .monthly-plan li { overflow-wrap: anywhere; }
 }
 
 .calendar-week { display: block; color: var(--ink-soft); font-size: 10px; }
@@ -59,3 +58,5 @@
 .event-item p { margin: 4px 0 0; color: var(--ink-soft); font-size: 12px; }
 
 .event-item__full-date { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--ink-soft); white-space: nowrap; }
+
+@media(max-width:620px) { .monthly-plan { margin-top: 14px; } .event-item__full-date { display: block; margin-left: 0; } }

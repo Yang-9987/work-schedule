@@ -5,6 +5,7 @@
   viewDate.setDate(1);
   var selectedDate = dateKey(viewDate.getFullYear(), viewDate.getMonth(), new Date().getDate());
   var loadError = "";
+  var mobileView = window.matchMedia("(max-width:620px)");
   var localPreview = new URLSearchParams(location.search).get("localPreview") === "1";
   function el(id) { return document.getElementById(id); }
   function pad(value) { return String(value).padStart(2, "0"); }
@@ -13,6 +14,8 @@
   function render() {
     var y = viewDate.getFullYear(), m = viewDate.getMonth(), prefix = dateKey(y, m, 1).slice(0, 7);
     if (selectedDate.slice(0, 7) !== prefix) selectedDate = "";
+    var activeDate = mobileView.matches ? "" : selectedDate;
+    el("todayButton").textContent = mobileView.matches ? "回到本月" : "回到今天";
     el("monthTitle").textContent = y + "年 " + (m + 1) + "月";
     var now = new Date(), todayKey = dateKey(now.getFullYear(), now.getMonth(), now.getDate());
     var plan = (data.monthlyPlans || []).find(function (p) { return p.month === prefix; });
@@ -31,22 +34,22 @@
     }
     for (var tail = (first + days) % 7; tail > 0 && tail < 7; tail++) html += '<div class="calendar-day is-empty" aria-hidden="true"></div>';
     el("monthGrid").innerHTML = html;
-    var list = Object.keys(byDate).flatMap(function (key) { return byDate[key]; }).filter(function (item) { return selectedDate ? item.date === selectedDate : item.date.slice(0, 7) === prefix; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
-    el("eventListTitle").textContent = selectedDate ? Number(selectedDate.slice(5, 7)) + "月" + Number(selectedDate.slice(8)) + "日" : "本月事件";
-    el("showAllEvents").hidden = !selectedDate;
+    var list = Object.keys(byDate).flatMap(function (key) { return byDate[key]; }).filter(function (item) { return activeDate ? item.date === activeDate : item.date.slice(0, 7) === prefix; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+    el("eventListTitle").textContent = activeDate ? Number(activeDate.slice(5, 7)) + "月" + Number(activeDate.slice(8)) + "日" : "本月事件";
+    el("showAllEvents").hidden = !activeDate;
     el("eventCount").textContent = list.length + " 项";
-    el("eventList").innerHTML = loadError ? '<p class="event-empty" role="status">' + safe(loadError) + '</p>' : list.length ? list.map(function (item) { return '<article class="event-item"><time class="event-item__date" datetime="' + safe(item.date) + '">' + safe(item.date.slice(8)) + '</time><div><h3>' + safe(item.title) + (!selectedDate ? '<small class="event-item__full-date">' + safe(item.date) + '</small>' : '') + '</h3>' + (item.note ? '<p>' + safe(item.note) + '</p>' : '') + '</div></article>'; }).join("") : '<p class="event-empty">' + (selectedDate ? "当天暂无事件。" : "本月暂无校历事项。") + '</p>';
+    el("eventList").innerHTML = loadError ? '<p class="event-empty" role="status">' + safe(loadError) + '</p>' : list.length ? list.map(function (item) { return '<article class="event-item"><time class="event-item__date" datetime="' + safe(item.date) + '">' + safe(item.date.slice(8)) + '</time><div><h3>' + safe(item.title) + (!activeDate ? '<small class="event-item__full-date">' + safe(item.date) + '</small>' : '') + '</h3>' + (item.note ? '<p>' + safe(item.note) + '</p>' : '') + '</div></article>'; }).join("") : '<p class="event-empty">' + (activeDate ? "当天暂无事件。" : "本月暂无校历事项。") + '</p>';
   }
   el("monthGrid").addEventListener("click", function (event) {
     var button = event.target.closest("[data-date]");
     if (!button) return;
     selectedDate = button.dataset.date; render();
-    if (window.matchMedia("(max-width:620px)").matches) el("eventPanel").scrollIntoView({ block: "start" });
   });
   el("showAllEvents").addEventListener("click", function () { selectedDate = ""; render(); });
   el("prevMonth").addEventListener("click", function () { viewDate.setMonth(viewDate.getMonth() - 1); render(); });
   el("nextMonth").addEventListener("click", function () { viewDate.setMonth(viewDate.getMonth() + 1); render(); });
   el("todayButton").addEventListener("click", function () { viewDate = new Date(); selectedDate = dateKey(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate()); viewDate.setDate(1); render(); });
+  mobileView.addEventListener("change", render);
   render();
   el("calendarMode").textContent = localPreview ? "本地预览 · 数据尚未同步到线上" : "按日期查看校园安排";
   fetch(localPreview ? "/api/local-console/page-preview?moduleId=school-calendar&t=" + Date.now() : "/api/calendar?t=" + Date.now(), {
