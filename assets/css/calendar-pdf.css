@@ -18,3 +18,9 @@
 .pdf-page figcaption { padding: 8px; text-align: center; color: var(--ink-soft); font-size: 12px; border-top: 1px solid var(--line); }
 @media (max-width: 900px) { .calendar-pdf__header { align-items: flex-start; flex-direction: column; gap: 10px; padding: 14px 16px; } }
 @media print { .calendar-pdf__header, .pdf-reader-tools, #nativeReader { display: none !important; } #imageReader { display: block !important; padding: 0; } .pdf-page { break-after: page; border: 0; } }
+
+.pdf-page__surface { position: relative; }
+.pdf-toc-link { position: absolute; display: block; border-radius: 2px; }
+.pdf-toc-link:hover, .pdf-toc-link:focus-visible { background: rgba(35,117,109,.12); outline: 2px solid var(--green); }
+.pdf-toc-return { position: fixed; z-index: 5; right: max(16px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); padding: 10px 16px; min-height: 44px; border: 1px solid var(--line); border-radius: 24px; background: #fff; color: var(--green); box-shadow: 0 2px 12px #18324722; text-decoration: none; }
+@media print { .pdf-toc-return { display: none; } }
