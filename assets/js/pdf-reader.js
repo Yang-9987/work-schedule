@@ -45,6 +45,17 @@
       else showPdf();
     });
   }
+  // A shared page anchor must open the image reader even on desktop.
+  function revealPageAnchor() {
+    if (!/^#page-\d+$/.test(location.hash)) return;
+    var target = document.getElementById(location.hash.slice(1));
+    if (!target) return;
+    if (images.hidden) showImages();
+    document.getElementById('pageNumber').value = location.hash.slice(6);
+    target.scrollIntoView({ block: 'start' });
+  }
+  window.addEventListener('hashchange', revealPageAnchor);
+  revealPageAnchor();
   document.getElementById('pageJump').addEventListener('submit', function (event) {
     event.preventDefault();
     var page = document.getElementById('page-' + Number(document.getElementById('pageNumber').value));
@@ -52,7 +63,7 @@
   });
   images.addEventListener('error', function (event) {
     if (event.target.tagName !== 'IMG') return;
-    var figure = event.target.parentNode;
+    var figure = event.target.closest('figure');
     if (figure.querySelector('button')) return;
     var retry = document.createElement('button');
     retry.type = 'button';
