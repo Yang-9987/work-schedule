@@ -38,7 +38,7 @@
     el("eventListTitle").textContent = activeDate ? Number(activeDate.slice(5, 7)) + "月" + Number(activeDate.slice(8)) + "日" : "本月事件";
     el("showAllEvents").hidden = !activeDate;
     el("eventCount").textContent = list.length + " 项";
-    el("eventList").innerHTML = loadError ? '<p class="event-empty" role="status">' + safe(loadError) + '</p>' : list.length ? list.map(function (item) { return '<article class="event-item"><time class="event-item__date" datetime="' + safe(item.date) + '">' + safe(item.date.slice(8)) + '</time><div><h3>' + safe(item.title) + (!activeDate ? '<small class="event-item__full-date">' + safe(item.date) + '</small>' : '') + '</h3>' + (item.note ? '<p>' + safe(item.note) + '</p>' : '') + '</div></article>'; }).join("") : '<p class="event-empty">' + (activeDate ? "当天暂无事件。" : "本月暂无校历事项。") + '</p>';
+    el("eventList").innerHTML = loadError ? '<p class="event-empty" role="status">' + safe(loadError) + '</p>' : list.length ? list.map(function (item) { return '<article class="event-item' + (item.date === todayKey ? ' is-today' : '') + '"><time class="event-item__date" datetime="' + safe(item.date) + '">' + safe(item.date.slice(8)) + (item.date === todayKey ? '<span class="event-item__today">今天</span>' : '') + '</time><div><h3>' + safe(item.title) + (!activeDate ? '<small class="event-item__full-date">' + safe(item.date) + '</small>' : '') + '</h3>' + (item.note ? '<p>' + safe(item.note) + '</p>' : '') + '</div></article>'; }).join("") : '<p class="event-empty">' + (activeDate ? "当天暂无事件。" : "本月暂无校历事项。") + '</p>';
   }
   el("monthGrid").addEventListener("click", function (event) {
     var button = event.target.closest("[data-date]");
