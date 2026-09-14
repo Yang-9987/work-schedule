@@ -19,7 +19,8 @@ const SCHEDULE_TYPES = {
   hygiene: "hygiene", "卫生检查": "hygiene",
   broadcast: "broadcast", "校园广播": "broadcast",
   nap: "nap", "午休": "nap", "午休时间": "nap",
-  club: "club", "社团": "club"
+  club: "club", "社团": "club",
+  after_school_service: "after_school_service", "课后服务": "after_school_service"
 };
 
 function text(value) {

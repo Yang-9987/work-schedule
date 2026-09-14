@@ -36,7 +36,7 @@ test('every work-schedule category keeps a visible color in the final stylesheet
   const css=fs.readFileSync(require.resolve('../assets/css/work-schedule.css'),'utf8');
   const typeBlock=html.match(/var TYPE_META = \{[\s\S]*?\n\};/)[0];
   const classes=[...typeBlock.matchAll(/className:\s*"([^"]+)"/g)].map(match=>match[1]);
-  assert.equal(classes.length,12);
+  assert.equal(classes.length,13);
   const backgrounds=new Set();
   for (const className of classes) {
     const rule=css.match(new RegExp('\\.'+className+'\\{([^}]*)\\}'));
